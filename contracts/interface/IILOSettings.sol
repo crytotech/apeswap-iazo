@@ -2,7 +2,7 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 interface IILOSettings {
     function getMaxPresaleLength() external view returns (uint256);

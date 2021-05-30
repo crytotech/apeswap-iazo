@@ -2,15 +2,13 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ILOSettings.sol";
 //import "./interface/IILOSettings.sol";
 
 contract ILO {
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     struct ILOInfo {
@@ -51,6 +49,8 @@ contract ILO {
     address public ILO_FABRIC;
     mapping(address => BuyerInfo) public BUYERS;
 
+    IERC20 WBNB = IERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
+
     address ADMIN_ADDRESS;
 
     // IPresaleLockForwarder public PRESALE_LOCK_FORWARDER;
@@ -73,30 +73,22 @@ contract ILO {
         _;
     }
 
-    function initializeILO external(
+    function initializeILO(
     IERC20 _iloToken,
     IERC20 _baseToken,
-    bool _iloSaleInBNB,
     uint256 _tokenPrice, 
     uint256 _amount,
     uint256 _hardcap, 
     uint256 _softcap,
     uint256 _startBlock,
     uint256 _activeBlocks,
-    uint256 _lockPeriod
+    uint256 _lockPeriod,
     uint256 _maxSpendPerBuyer, 
-    address payable _iloOwner, 
-
-    uint256 _unicryptBaseFee,
-    uint256 _unicryptTokenFee,
-    uint256 _referralFee,
-    address payable _baseFeeAddress,
-    address payable _tokenFeeAddress,
-    address payable _referralAddress
+    address payable _iloOwner
     ) external {
         ILO_INFO.ILO_TOKEN = _iloToken;
         ILO_INFO.BASE_TOKEN = _baseToken;
-        ILO_INFO.ILO_SALE_IN_BNB = _iloSaleInBNB;
+        ILO_INFO.ILO_SALE_IN_BNB = _baseToken == WBNB ? true : false;
         ILO_INFO.TOKEN_PRICE = _tokenPrice;
         ILO_INFO.AMOUNT = _amount;
         ILO_INFO.HARDCAP = _hardcap;
@@ -128,26 +120,26 @@ contract ILO {
         BuyerInfo storage buyer = BUYERS[msg.sender];
 
         uint256 amount_in = ILO_INFO.ILO_SALE_IN_BNB ? msg.value : _amount;
-        uint256 allowance = ILO_INFO.MAX_SPEND_PER_BUYER.sub(buyer.deposited);
+        uint256 allowance = ILO_INFO.MAX_SPEND_PER_BUYER - buyer.deposited;
         uint256 remaining = ILO_INFO.HARDCAP - STATUS.TOTAL_BASE_COLLECTED;
         allowance = allowance > remaining ? remaining : allowance;
         if (amount_in > allowance) {
             amount_in = allowance;
         }
 
-        uint256 tokensSold = amount_in.mul(ILO_INFO.TOKEN_PRICE).div(10 ** uint256(ILO_INFO.BASE_TOKEN.decimals()));
+        uint256 tokensSold = amount_in * ILO_INFO.TOKEN_PRICE / (10 ** uint256(ILO_INFO.BASE_TOKEN.decimals()));
         require(tokensSold > 0, '0 tokens');
         if (buyer.deposited == 0) {
             STATUS.NUM_BUYERS++;
         }
-        buyer.deposited = buyer.deposited.add(amount_in);
-        buyer.tokensBought = buyer.tokensBought.add(tokensSold);
-        STATUS.TOTAL_BASE_COLLECTED = STATUS.TOTAL_BASE_COLLECTED.add(amount_in);
-        STATUS.TOTAL_TOKENS_SOLD = STATUS.TOTAL_TOKENS_SOLD.add(tokensSold);
+        buyer.deposited += amount_in;
+        buyer.tokensBought += tokensSold;
+        STATUS.TOTAL_BASE_COLLECTED += amount_in;
+        STATUS.TOTAL_TOKENS_SOLD += tokensSold;
         
         // return unused BNB
         if (ILO_INFO.ILO_SALE_IN_BNB && amount_in < msg.value) {
-            payable(msg.sender).transfer(msg.value.sub(amount_in));
+            payable(msg.sender).transfer(msg.value - amount_in);
         }
         // deduct non BNB token from user
         if (!ILO_INFO.ILO_SALE_IN_BNB) {
@@ -172,7 +164,7 @@ contract ILO {
         require(STATUS.LP_GENERATION_COMPLETE, 'Awaiting LP generation');
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
-        STATUS.TOTAL_TOKENS_WITHDRAWN = STATUS.TOTAL_TOKENS_WITHDRAWN.add(buyer.tokensBought);
+        STATUS.TOTAL_TOKENS_WITHDRAWN += buyer.tokensBought;
         buyer.tokensBought = 0;
         ILO_INFO.ILO_TOKEN.transfer(msg.sender, buyer.tokensBought);
     }
@@ -180,7 +172,7 @@ contract ILO {
     function userWithdrawFailed() private {
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.deposited > 0, 'Nothing to withdraw');
-        STATUS.TOTAL_BASE_WITHDRAWN = STATUS.TOTAL_BASE_WITHDRAWN.add(buyer.deposited);
+        STATUS.TOTAL_BASE_WITHDRAWN += buyer.deposited;
         buyer.deposited = 0;
         
         if(ILO_INFO.ILO_SALE_IN_BNB){
