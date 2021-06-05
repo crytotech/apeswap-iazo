@@ -1,0 +1,31 @@
+{
+    "name": "ilo",
+    "version": "1.0.0",
+    "description": "\"# ILO\"",
+    "main": "truffle-config.js",
+    "directories": {
+        "example": "example",
+        "test": "test"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^4.1.0",
+        "bignumber.js": "^9.0.1"
+    },
+    "devDependencies": {
+        "chai": "^4.3.4",
+        "chai-bignumber": "^3.0.0"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Doublo54/ILO.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Doublo54/ILO/issues"
+    },
+    "homepage": "https://github.com/Doublo54/ILO#readme"
+}

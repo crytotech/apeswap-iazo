@@ -4,26 +4,29 @@
 
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./interface/IERC20.sol";
 import "./ILOSettings.sol";
 //import "./interface/IILOSettings.sol";
 
 contract ILO {
-    using SafeERC20 for IERC20;
-
     struct ILOInfo {
+        address payable ILO_OWNER; //ILO_OWNER address
         IERC20 ILO_TOKEN; // token offered for ILO
-        IERC20 BASE_TOKEN; // token to buy ILO_TOKEN (if not BNB)
+        IERC20 BASE_TOKEN; // token to buy ILO_TOKEN
         bool ILO_SALE_IN_BNB; // ILO sale in bnb or BEP20.
         uint256 TOKEN_PRICE; // cost for 1 ILO_TOKEN in BASE_TOKEN (or BNB)
         uint256 AMOUNT; // amount of ILO_TOKENS for sale
         uint256 HARDCAP; // hardcap of earnings.
-        uint256 SOFTCAP; // softcap for earning. if not reached ILO is cancelled
+        uint256 SOFTCAP; // softcap for earning. if not reached ILO is cancelled 
+        uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
+        uint256 LIQUIDITY_PERCENT; // divided by 1000
+        uint256 LISTING_RATE; // fixed rate at which the token will list on apeswap
+    }
+
+    struct ILOTimeInfo {
         uint256 START_BLOCK; // block to start ILO
         uint256 ACTIVE_BLOCKS; // end of ILO -> START_BLOCK + ACTIVE_BLOCKS
         uint256 LOCK_PERIOD; // unix timestamp (3 weeks) to lock earned tokens for ILO_OWNER
-        uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
-        address payable ILO_OWNER; //ILO_OWNER address
     }
 
     struct ILOStatus {
@@ -45,6 +48,7 @@ contract ILO {
 
     ILOStatus public STATUS;
     ILOInfo public ILO_INFO;
+    ILOTimeInfo public ILO_TIME_INFO;
     ILOSettings public ILO_SETTINGS;
     address public ILO_FABRIC;
     mapping(address => BuyerInfo) public BUYERS;
@@ -74,18 +78,18 @@ contract ILO {
     }
 
     function initializeILO(
-    IERC20 _iloToken,
-    IERC20 _baseToken,
-    uint256 _tokenPrice, 
-    uint256 _amount,
-    uint256 _hardcap, 
-    uint256 _softcap,
-    uint256 _startBlock,
-    uint256 _activeBlocks,
-    uint256 _lockPeriod,
-    uint256 _maxSpendPerBuyer, 
-    address payable _iloOwner
+        address payable _iloOwner,
+        IERC20 _iloToken,
+        IERC20 _baseToken,
+        uint256 _tokenPrice, 
+        uint256 _amount,
+        uint256 _hardcap, 
+        uint256 _softcap,
+        uint256 _maxSpendPerBuyer,
+        uint256 _liquidityPercent,
+        uint256 _listingRate
     ) external {
+        ILO_INFO.ILO_OWNER = _iloOwner;
         ILO_INFO.ILO_TOKEN = _iloToken;
         ILO_INFO.BASE_TOKEN = _baseToken;
         ILO_INFO.ILO_SALE_IN_BNB = _baseToken == WBNB ? true : false;
@@ -93,24 +97,32 @@ contract ILO {
         ILO_INFO.AMOUNT = _amount;
         ILO_INFO.HARDCAP = _hardcap;
         ILO_INFO.SOFTCAP = _softcap;
-        ILO_INFO.START_BLOCK = _startBlock;
-        ILO_INFO.ACTIVE_BLOCKS = _activeBlocks;
-        ILO_INFO.LOCK_PERIOD = _lockPeriod;
         ILO_INFO.MAX_SPEND_PER_BUYER = _maxSpendPerBuyer;
-        ILO_INFO.ILO_OWNER = _iloOwner;
+        ILO_INFO.LIQUIDITY_PERCENT = _liquidityPercent;
+        ILO_INFO.LISTING_RATE = _listingRate;
+    }
+
+    function initializeILO2(
+        uint256 _startBlock,
+        uint256 _activeBlocks,
+        uint256 _lockPeriod
+    ) external {
+        ILO_TIME_INFO.START_BLOCK = _startBlock;
+        ILO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
+        ILO_TIME_INFO.LOCK_PERIOD = _lockPeriod;
     }
 
     function ILOStatusNumber () public view returns (uint256) {
         // 4 FAILED - force fail
         if (STATUS.FORCE_FAILED) return 4; 
         // 4 FAILED - softcap not met by end block
-        if ((block.number > ILO_INFO.START_BLOCK + ILO_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED < ILO_INFO.SOFTCAP)) return 4; 
+        if ((block.number > ILO_TIME_INFO.START_BLOCK + ILO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED < ILO_INFO.SOFTCAP)) return 4; 
         // 3 SUCCESS - hardcap met
         if (STATUS.TOTAL_BASE_COLLECTED >= ILO_INFO.HARDCAP) return 3; 
         // 2 SUCCESS - endblock and soft cap reached
-        if ((block.number > ILO_INFO.START_BLOCK + ILO_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED >= ILO_INFO.SOFTCAP)) return 2; 
+        if ((block.number > ILO_TIME_INFO.START_BLOCK + ILO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED >= ILO_INFO.SOFTCAP)) return 2; 
         // 1 ACTIVE - deposits enabled
-        if ((block.number >= ILO_INFO.START_BLOCK) && (block.number <= ILO_INFO.START_BLOCK + ILO_INFO.ACTIVE_BLOCKS)) return 1; 
+        if ((block.number >= ILO_TIME_INFO.START_BLOCK) && (block.number <= ILO_TIME_INFO.START_BLOCK + ILO_TIME_INFO.ACTIVE_BLOCKS)) return 1; 
         // 0 QUEUED - awaiting start block
         return 0; 
     }
@@ -188,11 +200,11 @@ contract ILO {
 
     // Change start and end of ILO
     function updateStart(uint256 _startBlock, uint256 _activeBlocks) external onlyILOOwner {
-        require(ILO_INFO.START_BLOCK > block.number);
+        require(ILO_TIME_INFO.START_BLOCK > block.number);
         require(_startBlock > block.number, "Start block must be in future");
         require(_activeBlocks > 0, "Must be longer than 0 blocks");
-        ILO_INFO.START_BLOCK = _startBlock;
-        ILO_INFO.ACTIVE_BLOCKS = _activeBlocks;
+        ILO_TIME_INFO.START_BLOCK = _startBlock;
+        ILO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
     }
 
     function updateMaxSpendLimit(uint256 _maxSpend) external onlyILOOwner {

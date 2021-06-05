@@ -11,7 +11,7 @@ contract ILOExposer {
 
     EnumerableSet.AddressSet private ILOs;
 
-    address ILO_FABRIC;
+    address public ILO_FABRIC;
 
     event ILORegistered(address presaleContract);
 

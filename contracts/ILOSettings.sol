@@ -14,6 +14,7 @@ contract ILOSettings is Ownable {
         address payable FEE_ADDRESS;
         uint256 ETH_CREATION_FEE; // fee to generate a presale contract on the platform
         uint256 MAX_PRESALE_LENGTH; // maximum difference between start and endblock
+        uint256 MIN_LOCK_PERIOD;
     }
     
     Settings public SETTINGS;
@@ -24,25 +25,30 @@ contract ILOSettings is Ownable {
         SETTINGS.ETH_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(msg.sender);
         SETTINGS.MAX_PRESALE_LENGTH = 139569; // 3 weeks
+        SETTINGS.MIN_LOCK_PERIOD = 28; // in days
     }
 
-    function getMaxPresaleLength () external view returns (uint256) {
+    function getMaxILOLength() external view returns (uint256) {
         return SETTINGS.MAX_PRESALE_LENGTH;
     }
     
-    function getBaseFee () external view returns (uint256) {
+    function getBaseFee() external view returns (uint256) {
         return SETTINGS.BASE_FEE;
     }
     
-    function getTokenFee () external view returns (uint256) {
+    function getTokenFee() external view returns (uint256) {
         return SETTINGS.TOKEN_FEE;
     }
     
-    function getEthCreationFee () external view returns (uint256) {
+    function getEthCreationFee() external view returns (uint256) {
         return SETTINGS.ETH_CREATION_FEE;
     }
+
+    function getMinLockPeriod() external view returns (uint256) {
+        return SETTINGS.MIN_LOCK_PERIOD;
+    }
     
-    function getFeeAddress () external view returns (address payable) {
+    function getFeeAddress() external view returns (address payable) {
         return SETTINGS.FEE_ADDRESS;
     }
     
@@ -56,7 +62,11 @@ contract ILOSettings is Ownable {
         SETTINGS.ETH_CREATION_FEE = _ethCreationFee;
     }
 
-    function setMaxPresaleLength(uint256 _maxLength) external onlyOwner {
+    function setMaxILOLength(uint256 _maxLength) external onlyOwner {
         SETTINGS.MAX_PRESALE_LENGTH = _maxLength;
+    }   
+
+    function setMinLockPeriod(uint256 _minLockPeriod) external onlyOwner {
+        SETTINGS.MIN_LOCK_PERIOD = _minLockPeriod;
     }    
 }
