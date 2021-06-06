@@ -13,7 +13,8 @@ contract ILOSettings is Ownable {
         uint256 TOKEN_FEE; // token fee divided by 1000
         address payable FEE_ADDRESS;
         uint256 ETH_CREATION_FEE; // fee to generate a presale contract on the platform
-        uint256 MAX_PRESALE_LENGTH; // maximum difference between start and endblock
+        uint256 MIN_PRESALE_LENGTH; // minimum ilo active blocks
+        uint256 MAX_PRESALE_LENGTH; // maximum ilo active blocks
         uint256 MIN_LOCK_PERIOD;
     }
     
@@ -24,11 +25,16 @@ contract ILOSettings is Ownable {
         SETTINGS.TOKEN_FEE = 10; // 1%
         SETTINGS.ETH_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(msg.sender);
-        SETTINGS.MAX_PRESALE_LENGTH = 139569; // 3 weeks
+        SETTINGS.MIN_PRESALE_LENGTH = 28700; // ~1 day
+        SETTINGS.MAX_PRESALE_LENGTH = 602700; // ~3 weeks (when 28700 blocks in 1 day) 
         SETTINGS.MIN_LOCK_PERIOD = 28; // in days
     }
 
     function getMaxILOLength() external view returns (uint256) {
+        return SETTINGS.MAX_PRESALE_LENGTH;
+    }
+
+    function getMinILOLength() external view returns (uint256) {
         return SETTINGS.MAX_PRESALE_LENGTH;
     }
     
@@ -64,6 +70,10 @@ contract ILOSettings is Ownable {
 
     function setMaxILOLength(uint256 _maxLength) external onlyOwner {
         SETTINGS.MAX_PRESALE_LENGTH = _maxLength;
+    }  
+
+    function setMinILOLength(uint256 _minLength) external onlyOwner {
+        SETTINGS.MIN_PRESALE_LENGTH = _minLength;
     }   
 
     function setMinLockPeriod(uint256 _minLockPeriod) external onlyOwner {

@@ -5,7 +5,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interface/IERC20.sol";
+import "./interface/ERC20.sol";
 import "./ILOSettings.sol";
 import "./ILOExposer.sol";
 import "./ILO.sol";
@@ -37,8 +37,8 @@ contract ILOFabric is Ownable {
     // Create new ILO and add address to ILOExposer.
     function createILO(
         address payable _ILOOwner,
-        IERC20 _ILOToken,
-        IERC20 _baseToken,
+        ERC20 _ILOToken,
+        ERC20 _baseToken,
         uint256[10] memory uint_params
     ) public payable {
         ILOParams memory params;
@@ -66,13 +66,19 @@ contract ILOFabric is Ownable {
             address(this).balance
         );
 
+        require(params.START_BLOCK > block.number, "ilo should start in future");
+        require(
+            params.ACTIVE_BLOCKS >= ILO_SETTINGS.getMinILOLength(), 
+            "ilo length not long enough"
+        );
+        require(
+            params.ACTIVE_BLOCKS <= ILO_SETTINGS.getMaxILOLength(), 
+            "Exceeds max ilo length"
+        );
+
         require(params.AMOUNT >= 10000, "Minimum divisibility");
         require(params.HARDCAP > 0, "Invalid hardcap");
         require(params.TOKEN_PRICE > 0, "Invalid token price");
-        require(
-            params.ACTIVE_BLOCKS <=
-                ILO_SETTINGS.getMaxILOLength()
-        );
         require(
             params.LIQUIDITY_PERCENT >= 300 && params.LIQUIDITY_PERCENT <= 1000,
             "MIN LIQUIDITY"
@@ -81,7 +87,7 @@ contract ILOFabric is Ownable {
         uint256 tokensRequired = getTokensRequired(
             params.AMOUNT,
             params.TOKEN_PRICE,
-            0,//params.LISTING_RATE, 
+            params.LISTING_RATE, 
             params.LIQUIDITY_PERCENT,
             ILO_SETTINGS.getTokenFee()
         );

@@ -1,7 +1,5 @@
-const Banana = artifacts.require("Banana");
-const WBNB = artifacts.require("WBNB");
+const ILOSettings = artifacts.require("ILOSettings");
 
 module.exports = function (deployer) {
-  deployer.deploy(WBNB);
-  deployer.deploy(Banana);
+  deployer.deploy(ILOSettings);
 };

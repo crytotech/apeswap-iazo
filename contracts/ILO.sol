@@ -4,15 +4,15 @@
 
 pragma solidity ^0.8.4;
 
-import "./interface/IERC20.sol";
+import "./interface/ERC20.sol";
 import "./ILOSettings.sol";
 //import "./interface/IILOSettings.sol";
 
 contract ILO {
     struct ILOInfo {
         address payable ILO_OWNER; //ILO_OWNER address
-        IERC20 ILO_TOKEN; // token offered for ILO
-        IERC20 BASE_TOKEN; // token to buy ILO_TOKEN
+        ERC20 ILO_TOKEN; // token offered for ILO
+        ERC20 BASE_TOKEN; // token to buy ILO_TOKEN
         bool ILO_SALE_IN_BNB; // ILO sale in bnb or BEP20.
         uint256 TOKEN_PRICE; // cost for 1 ILO_TOKEN in BASE_TOKEN (or BNB)
         uint256 AMOUNT; // amount of ILO_TOKENS for sale
@@ -30,14 +30,12 @@ contract ILO {
     }
 
     struct ILOStatus {
-        bool WHITELIST_ONLY; // if set to true only whitelisted members may participate
         bool LP_GENERATION_COMPLETE; // final flag required to end a presale and enable withdrawls
         bool FORCE_FAILED; // set this flag to force fail the presale
         uint256 TOTAL_BASE_COLLECTED; // total base currency raised (usually ETH)
         uint256 TOTAL_TOKENS_SOLD; // total presale tokens sold
         uint256 TOTAL_TOKENS_WITHDRAWN; // total tokens withdrawn post successful presale
         uint256 TOTAL_BASE_WITHDRAWN; // total base tokens withdrawn on presale failure
-        uint256 ROUND1_LENGTH; // in blocks
         uint256 NUM_BUYERS; // number of unique participants
     }
 
@@ -53,7 +51,7 @@ contract ILO {
     address public ILO_FABRIC;
     mapping(address => BuyerInfo) public BUYERS;
 
-    IERC20 WBNB = IERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
+    ERC20 WBNB = ERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
 
     address ADMIN_ADDRESS;
 
@@ -79,8 +77,8 @@ contract ILO {
 
     function initializeILO(
         address payable _iloOwner,
-        IERC20 _iloToken,
-        IERC20 _baseToken,
+        ERC20 _iloToken,
+        ERC20 _baseToken,
         uint256 _tokenPrice, 
         uint256 _amount,
         uint256 _hardcap, 
@@ -109,7 +107,7 @@ contract ILO {
     ) external {
         ILO_TIME_INFO.START_BLOCK = _startBlock;
         ILO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
-        ILO_TIME_INFO.LOCK_PERIOD = _lockPeriod;
+        ILO_TIME_INFO.LOCK_PERIOD = _lockPeriod; 
     }
 
     function ILOStatusNumber () public view returns (uint256) {
@@ -140,7 +138,7 @@ contract ILO {
         }
 
         uint256 tokensSold = amount_in * ILO_INFO.TOKEN_PRICE / (10 ** uint256(ILO_INFO.BASE_TOKEN.decimals()));
-        require(tokensSold > 0, '0 tokens');
+        require(tokensSold > 0, '0 tokens bought');
         if (buyer.deposited == 0) {
             STATUS.NUM_BUYERS++;
         }
@@ -200,9 +198,9 @@ contract ILO {
 
     // Change start and end of ILO
     function updateStart(uint256 _startBlock, uint256 _activeBlocks) external onlyILOOwner {
-        require(ILO_TIME_INFO.START_BLOCK > block.number);
+        require(ILO_TIME_INFO.START_BLOCK > block.number, "Current ilo start block not in future");
         require(_startBlock > block.number, "Start block must be in future");
-        require(_activeBlocks > 0, "Must be longer than 0 blocks");
+        require(_activeBlocks >= ILO_SETTINGS.getMinILOLength(), "Active ilo not long enough");
         ILO_TIME_INFO.START_BLOCK = _startBlock;
         ILO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
     }
