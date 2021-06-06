@@ -68,7 +68,7 @@ contract("ILOFabric", accounts => {
 
 
 
-        
+
         //just anything to increase block number by 1 so the ilo start block is reached
         web3.eth.sendTransaction({ to: accounts[2], from: accounts[0], value: "1000" })
 
@@ -126,4 +126,4 @@ contract("ILOFabric", accounts => {
             "account deposited check"
         );
     });
-});
+}); 

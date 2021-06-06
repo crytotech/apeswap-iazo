@@ -5,7 +5,9 @@
 pragma solidity ^0.8.4;
 
 import "./interface/ERC20.sol";
+import "./interface/IWBNB.sol";
 import "./ILOSettings.sol";
+import "./LiquidityLocker.sol";
 //import "./interface/IILOSettings.sol";
 
 contract ILO {
@@ -30,36 +32,44 @@ contract ILO {
     }
 
     struct ILOStatus {
-        bool LP_GENERATION_COMPLETE; // final flag required to end a presale and enable withdrawls
-        bool FORCE_FAILED; // set this flag to force fail the presale
+        bool LP_GENERATION_COMPLETE; // final flag required to end a ilo and enable withdrawls
+        bool FORCE_FAILED; // set this flag to force fail the ilo
         uint256 TOTAL_BASE_COLLECTED; // total base currency raised (usually ETH)
-        uint256 TOTAL_TOKENS_SOLD; // total presale tokens sold
-        uint256 TOTAL_TOKENS_WITHDRAWN; // total tokens withdrawn post successful presale
-        uint256 TOTAL_BASE_WITHDRAWN; // total base tokens withdrawn on presale failure
+        uint256 TOTAL_TOKENS_SOLD; // total ilo tokens sold
+        uint256 TOTAL_TOKENS_WITHDRAWN; // total tokens withdrawn post successful ilo
+        uint256 TOTAL_BASE_WITHDRAWN; // total base tokens withdrawn on ilo failure
         uint256 NUM_BUYERS; // number of unique participants
     }
 
     struct BuyerInfo {
         uint256 deposited; // deposited base tokens, if ILO fails these can be withdrawn
-        uint256 tokensBought; // bought tokens. can be withdrawn on presale success
+        uint256 tokensBought; // bought tokens. can be withdrawn on ilo success
+    }
+
+    struct FeeInfo {
+        address payable FEE_ADDRESS;
+        uint256 BASE_FEE; // divided by 1000
+        uint256 TOKEN_FEE; // divided by 1000
     }
 
     ILOStatus public STATUS;
     ILOInfo public ILO_INFO;
     ILOTimeInfo public ILO_TIME_INFO;
     ILOSettings public ILO_SETTINGS;
+    LiquidityLocker public LIQUIDITY_LOCKER;
+    FeeInfo public FEE_INFO;
     address public ILO_FABRIC;
     mapping(address => BuyerInfo) public BUYERS;
 
-    ERC20 WBNB = ERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
+    IWBNB WBNB = IWBNB(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
 
     address ADMIN_ADDRESS;
-
-    // IPresaleLockForwarder public PRESALE_LOCK_FORWARDER;
+    address payable FEE_ADDRESS;
 
     constructor(address _ILOFabric) {
         ILO_FABRIC = _ILOFabric;
         ILO_SETTINGS = ILOSettings(0x539EE706ea34a2145b653C995c4245f41450894d);
+        LIQUIDITY_LOCKER = LiquidityLocker(0x539EE706ea34a2145b653C995c4245f41450894d);
         ADMIN_ADDRESS = 0x539EE706ea34a2145b653C995c4245f41450894d;
     }
 
@@ -90,7 +100,7 @@ contract ILO {
         ILO_INFO.ILO_OWNER = _iloOwner;
         ILO_INFO.ILO_TOKEN = _iloToken;
         ILO_INFO.BASE_TOKEN = _baseToken;
-        ILO_INFO.ILO_SALE_IN_BNB = _baseToken == WBNB ? true : false;
+        ILO_INFO.ILO_SALE_IN_BNB = address(_baseToken) == address(WBNB) ? true : false;
         ILO_INFO.TOKEN_PRICE = _tokenPrice;
         ILO_INFO.AMOUNT = _amount;
         ILO_INFO.HARDCAP = _hardcap;
@@ -103,11 +113,18 @@ contract ILO {
     function initializeILO2(
         uint256 _startBlock,
         uint256 _activeBlocks,
-        uint256 _lockPeriod
+        uint256 _lockPeriod,
+        address payable _feeAddress,
+        uint256 _baseFee,
+        uint256 _tokenFee
     ) external {
         ILO_TIME_INFO.START_BLOCK = _startBlock;
         ILO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
-        ILO_TIME_INFO.LOCK_PERIOD = _lockPeriod; 
+        ILO_TIME_INFO.LOCK_PERIOD = _lockPeriod;
+
+        FEE_INFO.FEE_ADDRESS = _feeAddress;
+        FEE_INFO.BASE_FEE = _baseFee;
+        FEE_INFO.TOKEN_FEE = _tokenFee;
     }
 
     function ILOStatusNumber () public view returns (uint256) {
@@ -207,5 +224,61 @@ contract ILO {
 
     function updateMaxSpendLimit(uint256 _maxSpend) external onlyILOOwner {
         ILO_INFO.MAX_SPEND_PER_BUYER = _maxSpend;
+    }
+
+    //final step when ilo is successfull. lock liquidity and enable withdrawals of sale token.
+    function addLiquidity() external {
+        require(!STATUS.LP_GENERATION_COMPLETE, 'GENERATION COMPLETE');
+        require(ILOStatusNumber() == 2 || ILOStatusNumber() == 3, 'ILO failed or still in progress'); // SUCCESS
+
+        if (LIQUIDITY_LOCKER.uniswapPairIsInitialised(address(ILO_INFO.ILO_TOKEN), address(ILO_INFO.BASE_TOKEN))) {
+            STATUS.FORCE_FAILED = true;
+            return;
+        }
+        
+        uint256 apeswapBaseFee = STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
+        
+        // base token liquidity
+        uint256 baseLiquidity = STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee * ILO_INFO.LIQUIDITY_PERCENT / 1000;
+        
+        if (ILO_INFO.ILO_SALE_IN_BNB) {
+            WBNB.deposit{value : baseLiquidity}();
+        }
+
+        ILO_INFO.BASE_TOKEN.approve(address(LIQUIDITY_LOCKER), baseLiquidity);
+
+        // sale token liquidity
+        uint256 tokenLiquidity = baseLiquidity * ILO_INFO.LISTING_RATE / 10 ** uint256(ILO_INFO.BASE_TOKEN.decimals());
+        ILO_INFO.ILO_TOKEN.approve(address(LIQUIDITY_LOCKER), tokenLiquidity);
+
+        LIQUIDITY_LOCKER.lockLiquidity(ILO_INFO.BASE_TOKEN, ILO_INFO.ILO_TOKEN, baseLiquidity, tokenLiquidity, block.timestamp + ILO_TIME_INFO.LOCK_PERIOD, ILO_INFO.ILO_OWNER);
+        
+        // transfer fees
+        uint256 apeswapTokenFee = STATUS.TOTAL_TOKENS_SOLD * FEE_INFO.TOKEN_FEE / 1000;
+
+        if(ILO_INFO.ILO_SALE_IN_BNB){
+            FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
+        } else {
+            ILO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapTokenFee);
+        }
+        ILO_INFO.ILO_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapTokenFee);
+        
+        // send remaining ilo tokens to ilo owner
+        uint256 remainingILOTokenBalance = ILO_INFO.ILO_TOKEN.balanceOf(address(this));
+        if (remainingILOTokenBalance > STATUS.TOTAL_TOKENS_SOLD) {
+            uint256 amountLeft = remainingILOTokenBalance - STATUS.TOTAL_TOKENS_SOLD;
+            ILO_INFO.ILO_TOKEN.transfer(ILO_INFO.ILO_OWNER, amountLeft);
+        }
+        
+        // send remaining base tokens to ilo owner
+        uint256 remainingBaseBalance = ILO_INFO.ILO_SALE_IN_BNB ? address(this).balance : ILO_INFO.BASE_TOKEN.balanceOf(address(this));
+        
+        if(ILO_INFO.ILO_SALE_IN_BNB){
+            FEE_INFO.FEE_ADDRESS.transfer(remainingBaseBalance);
+        } else {
+            ILO_INFO.BASE_TOKEN.transfer(ILO_INFO.ILO_OWNER, remainingBaseBalance);
+        }
+        
+        STATUS.LP_GENERATION_COMPLETE = true;
     }
 }

@@ -112,7 +112,10 @@ contract ILOFabric is Ownable {
         newILO.initializeILO2(
             params.START_BLOCK,
             params.ACTIVE_BLOCKS,
-            params.LOCK_PERIOD
+            params.LOCK_PERIOD,
+            ILO_SETTINGS.getFeeAddress(),
+            ILO_SETTINGS.getBaseFee(),
+            ILO_SETTINGS.getTokenFee()
         );
 
         ILO_EXPOSER.registerILO(address(newILO));

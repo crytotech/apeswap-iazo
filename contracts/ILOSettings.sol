@@ -9,9 +9,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract ILOSettings is Ownable {
 
     struct Settings {
+        address payable FEE_ADDRESS;
         uint256 BASE_FEE; // base fee divided by 1000
         uint256 TOKEN_FEE; // token fee divided by 1000
-        address payable FEE_ADDRESS;
         uint256 ETH_CREATION_FEE; // fee to generate a presale contract on the platform
         uint256 MIN_PRESALE_LENGTH; // minimum ilo active blocks
         uint256 MAX_PRESALE_LENGTH; // maximum ilo active blocks
