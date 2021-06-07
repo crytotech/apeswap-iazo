@@ -30,7 +30,7 @@ contract ILOFabric is Ownable {
     constructor() {
         ILO_EXPOSER = new ILOExposer(address(this));
         ILO_SETTINGS = ILOSettings(
-            0x94b83042B48F239c9CcF1537471334D474E11037
+            0xc837205Affba73922B089Cfe6F0A471D03f2eb09
         );
     }
 

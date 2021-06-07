@@ -11,4 +11,12 @@ contract WBNB is ERC20 {
     function mint(uint256 x) public {
         _mint(msg.sender, x);
     }
+
+    function burn(uint256 x) public {
+        _burn(msg.sender, x);
+    }
+
+    function burnAll() public {
+        _burn(msg.sender, balanceOf(msg.sender));
+    }
 }

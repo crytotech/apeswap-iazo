@@ -68,8 +68,8 @@ contract ILO {
 
     constructor(address _ILOFabric) {
         ILO_FABRIC = _ILOFabric;
-        ILO_SETTINGS = ILOSettings(0x539EE706ea34a2145b653C995c4245f41450894d);
-        LIQUIDITY_LOCKER = LiquidityLocker(0x539EE706ea34a2145b653C995c4245f41450894d);
+        ILO_SETTINGS = ILOSettings(0x94b83042B48F239c9CcF1537471334D474E11037);
+        LIQUIDITY_LOCKER = LiquidityLocker(0x6a326e0E1a28840DBdf61dbBE01B2A218C15d969);
         ADMIN_ADDRESS = 0x539EE706ea34a2145b653C995c4245f41450894d;
     }
 
@@ -154,10 +154,10 @@ contract ILO {
             amount_in = allowance;
         }
 
-        uint256 tokensSold = amount_in * ILO_INFO.TOKEN_PRICE / (10 ** uint256(ILO_INFO.BASE_TOKEN.decimals()));
+        uint256 tokensSold = amount_in / ILO_INFO.TOKEN_PRICE * (10 ** uint256(ILO_INFO.BASE_TOKEN.decimals()));
         require(tokensSold > 0, '0 tokens bought');
         if (buyer.deposited == 0) {
-            STATUS.NUM_BUYERS++;
+            STATUS.NUM_BUYERS += 1;
         }
         buyer.deposited += amount_in;
         buyer.tokensBought += tokensSold;
@@ -172,6 +172,8 @@ contract ILO {
         if (!ILO_INFO.ILO_SALE_IN_BNB) {
             ILO_INFO.BASE_TOKEN.transferFrom(msg.sender, address(this), amount_in);
         }
+
+        STATUS.LP_GENERATION_COMPLETE = true;
     }
 
     function userWithdraw() external {
@@ -192,8 +194,8 @@ contract ILO {
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
         STATUS.TOTAL_TOKENS_WITHDRAWN += buyer.tokensBought;
-        buyer.tokensBought = 0;
         ILO_INFO.ILO_TOKEN.transfer(msg.sender, buyer.tokensBought);
+        buyer.tokensBought = 0;
     }
 
     function userWithdrawFailed() private {
@@ -226,59 +228,65 @@ contract ILO {
         ILO_INFO.MAX_SPEND_PER_BUYER = _maxSpend;
     }
 
+    function updateMaxSpend(uint256 _maxSpend) external {
+        ILO_INFO.MAX_SPEND_PER_BUYER = _maxSpend;
+    }
+
     //final step when ilo is successfull. lock liquidity and enable withdrawals of sale token.
     function addLiquidity() external {
-        require(!STATUS.LP_GENERATION_COMPLETE, 'GENERATION COMPLETE');
-        require(ILOStatusNumber() == 2 || ILOStatusNumber() == 3, 'ILO failed or still in progress'); // SUCCESS
-
-        if (LIQUIDITY_LOCKER.uniswapPairIsInitialised(address(ILO_INFO.ILO_TOKEN), address(ILO_INFO.BASE_TOKEN))) {
-            STATUS.FORCE_FAILED = true;
-            return;
-        }
-        
-        uint256 apeswapBaseFee = STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
-        
-        // base token liquidity
-        uint256 baseLiquidity = STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee * ILO_INFO.LIQUIDITY_PERCENT / 1000;
-        
-        if (ILO_INFO.ILO_SALE_IN_BNB) {
-            WBNB.deposit{value : baseLiquidity}();
-        }
-
-        ILO_INFO.BASE_TOKEN.approve(address(LIQUIDITY_LOCKER), baseLiquidity);
-
-        // sale token liquidity
-        uint256 tokenLiquidity = baseLiquidity * ILO_INFO.LISTING_RATE / 10 ** uint256(ILO_INFO.BASE_TOKEN.decimals());
-        ILO_INFO.ILO_TOKEN.approve(address(LIQUIDITY_LOCKER), tokenLiquidity);
-
-        LIQUIDITY_LOCKER.lockLiquidity(ILO_INFO.BASE_TOKEN, ILO_INFO.ILO_TOKEN, baseLiquidity, tokenLiquidity, block.timestamp + ILO_TIME_INFO.LOCK_PERIOD, ILO_INFO.ILO_OWNER);
-        
-        // transfer fees
-        uint256 apeswapTokenFee = STATUS.TOTAL_TOKENS_SOLD * FEE_INFO.TOKEN_FEE / 1000;
-
-        if(ILO_INFO.ILO_SALE_IN_BNB){
-            FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
-        } else {
-            ILO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapTokenFee);
-        }
-        ILO_INFO.ILO_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapTokenFee);
-        
-        // send remaining ilo tokens to ilo owner
-        uint256 remainingILOTokenBalance = ILO_INFO.ILO_TOKEN.balanceOf(address(this));
-        if (remainingILOTokenBalance > STATUS.TOTAL_TOKENS_SOLD) {
-            uint256 amountLeft = remainingILOTokenBalance - STATUS.TOTAL_TOKENS_SOLD;
-            ILO_INFO.ILO_TOKEN.transfer(ILO_INFO.ILO_OWNER, amountLeft);
-        }
-        
-        // send remaining base tokens to ilo owner
-        uint256 remainingBaseBalance = ILO_INFO.ILO_SALE_IN_BNB ? address(this).balance : ILO_INFO.BASE_TOKEN.balanceOf(address(this));
-        
-        if(ILO_INFO.ILO_SALE_IN_BNB){
-            FEE_INFO.FEE_ADDRESS.transfer(remainingBaseBalance);
-        } else {
-            ILO_INFO.BASE_TOKEN.transfer(ILO_INFO.ILO_OWNER, remainingBaseBalance);
-        }
-        
         STATUS.LP_GENERATION_COMPLETE = true;
+        
+        // require(!STATUS.LP_GENERATION_COMPLETE, 'GENERATION COMPLETE');
+        // require(ILOStatusNumber() == 2 || ILOStatusNumber() == 3, 'ILO failed or still in progress'); // SUCCESS
+
+        // if (LIQUIDITY_LOCKER.uniswapPairIsInitialised(address(ILO_INFO.ILO_TOKEN), address(ILO_INFO.BASE_TOKEN))) {
+        //     STATUS.FORCE_FAILED = true;
+        //     return;
+        // }
+        
+        // uint256 apeswapBaseFee = STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
+        
+        // // base token liquidity
+        // uint256 baseLiquidity = STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee * ILO_INFO.LIQUIDITY_PERCENT / 1000;
+        
+        // if (ILO_INFO.ILO_SALE_IN_BNB) {
+        //     WBNB.deposit{value : baseLiquidity}();
+        // }
+
+        // ILO_INFO.BASE_TOKEN.approve(address(LIQUIDITY_LOCKER), baseLiquidity);
+
+        // // sale token liquidity
+        // uint256 tokenLiquidity = baseLiquidity * ILO_INFO.LISTING_RATE / 10 ** uint256(ILO_INFO.BASE_TOKEN.decimals());
+        // ILO_INFO.ILO_TOKEN.approve(address(LIQUIDITY_LOCKER), tokenLiquidity);
+
+        // LIQUIDITY_LOCKER.lockLiquidity(ILO_INFO.BASE_TOKEN, ILO_INFO.ILO_TOKEN, baseLiquidity, tokenLiquidity, block.timestamp + ILO_TIME_INFO.LOCK_PERIOD, ILO_INFO.ILO_OWNER);
+        
+        // // transfer fees
+        // uint256 apeswapTokenFee = STATUS.TOTAL_TOKENS_SOLD * FEE_INFO.TOKEN_FEE / 1000;
+
+        // if(ILO_INFO.ILO_SALE_IN_BNB){
+        //     FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
+        // } else {
+        //     ILO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapTokenFee);
+        // }
+        // ILO_INFO.ILO_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapTokenFee);
+        
+        // // send remaining ilo tokens to ilo owner
+        // uint256 remainingILOTokenBalance = ILO_INFO.ILO_TOKEN.balanceOf(address(this));
+        // if (remainingILOTokenBalance > STATUS.TOTAL_TOKENS_SOLD) {
+        //     uint256 amountLeft = remainingILOTokenBalance - STATUS.TOTAL_TOKENS_SOLD;
+        //     ILO_INFO.ILO_TOKEN.transfer(ILO_INFO.ILO_OWNER, amountLeft);
+        // }
+        
+        // // send remaining base tokens to ilo owner
+        // uint256 remainingBaseBalance = ILO_INFO.ILO_SALE_IN_BNB ? address(this).balance : ILO_INFO.BASE_TOKEN.balanceOf(address(this));
+        
+        // if(ILO_INFO.ILO_SALE_IN_BNB){
+        //     FEE_INFO.FEE_ADDRESS.transfer(remainingBaseBalance);
+        // } else {
+        //     ILO_INFO.BASE_TOKEN.transfer(ILO_INFO.ILO_OWNER, remainingBaseBalance);
+        // }
+        
+        // STATUS.LP_GENERATION_COMPLETE = true;
     }
 }
