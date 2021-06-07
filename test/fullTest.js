@@ -32,7 +32,7 @@ contract("ILOFabric", async (accounts) => {
         await banana.mint("2000000000000000000000000", { from: accounts[1] });
         await banana.approve(fabric.address, "2000000000000000000000000", { from: accounts[1] });
         const blockNumber = await web3.eth.getBlockNumber();
-        await fabric.createILO(accounts[1], banana.address, wbnb.address, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000000", "1000000000000000000000", blockNumber + 2, 28700, 60, "2000000000000000000000000", 300, 1], { from: accounts[1], value: 1000000000000000000 })
+        await fabric.createILO(accounts[1], banana.address, wbnb.address, true, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000000", "1000000000000000000000", blockNumber + 2, 28700, 60, "2000000000000000000000000", 300, 1], { from: accounts[1], value: 1000000000000000000 })
 
         //Fee check2
         const newBalance = await web3.eth.getBalance(FeeAddress);

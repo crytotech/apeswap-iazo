@@ -11,7 +11,6 @@ contract ILOSettings is Ownable {
     struct Settings {
         address payable FEE_ADDRESS;
         uint256 BASE_FEE; // base fee divided by 1000
-        uint256 TOKEN_FEE; // token fee divided by 1000
         uint256 ETH_CREATION_FEE; // fee to generate a ILO contract on the platform
         uint256 MIN_ILO_LENGTH; // minimum ilo active blocks
         uint256 MAX_ILO_LENGTH; // maximum ilo active blocks
@@ -22,7 +21,6 @@ contract ILOSettings is Ownable {
     
     constructor() {
         SETTINGS.BASE_FEE = 10; // 1%
-        SETTINGS.TOKEN_FEE = 10; // 1%
         SETTINGS.ETH_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(msg.sender);
         SETTINGS.MIN_ILO_LENGTH = 28700; // ~1 day
@@ -42,10 +40,6 @@ contract ILOSettings is Ownable {
         return SETTINGS.BASE_FEE;
     }
     
-    function getTokenFee() external view returns (uint256) {
-        return SETTINGS.TOKEN_FEE;
-    }
-    
     function getEthCreationFee() external view returns (uint256) {
         return SETTINGS.ETH_CREATION_FEE;
     }
@@ -62,9 +56,8 @@ contract ILOSettings is Ownable {
         SETTINGS.FEE_ADDRESS = _address;
     }
     
-    function setFees(uint256 _baseFee, uint256 _tokenFee, uint256 _ethCreationFee) external onlyOwner {
+    function setFees(uint256 _baseFee, uint256 _ethCreationFee) external onlyOwner {
         SETTINGS.BASE_FEE = _baseFee;
-        SETTINGS.TOKEN_FEE = _tokenFee;
         SETTINGS.ETH_CREATION_FEE = _ethCreationFee;
     }
 

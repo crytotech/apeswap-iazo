@@ -48,8 +48,8 @@ contract ILO {
 
     struct FeeInfo {
         address payable FEE_ADDRESS;
+        bool PREPAID_FEE;
         uint256 BASE_FEE; // divided by 1000
-        uint256 TOKEN_FEE; // divided by 1000
     }
 
     ILOStatus public STATUS;
@@ -114,17 +114,17 @@ contract ILO {
         uint256 _startBlock,
         uint256 _activeBlocks,
         uint256 _lockPeriod,
+        bool _prepaidFee,
         address payable _feeAddress,
-        uint256 _baseFee,
-        uint256 _tokenFee
+        uint256 _baseFee
     ) external {
         ILO_TIME_INFO.START_BLOCK = _startBlock;
         ILO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
         ILO_TIME_INFO.LOCK_PERIOD = _lockPeriod;
 
+        FEE_INFO.PREPAID_FEE = _prepaidFee;
         FEE_INFO.FEE_ADDRESS = _feeAddress;
         FEE_INFO.BASE_FEE = _baseFee;
-        FEE_INFO.TOKEN_FEE = _tokenFee;
     }
 
     function ILOStatusNumber () public view returns (uint256) {

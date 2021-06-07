@@ -39,6 +39,7 @@ contract ILOFabric is Ownable {
         address payable _ILOOwner,
         ERC20 _ILOToken,
         ERC20 _baseToken,
+        bool prepaidFee,
         uint256[10] memory uint_params
     ) public payable {
         ILOParams memory params;
@@ -58,13 +59,15 @@ contract ILOFabric is Ownable {
         }
 
         // Charge ETH fee for contract creation
-        require(
-            msg.value >= ILO_SETTINGS.getEthCreationFee(),
-            "Fee not met"
-        );
-        ILO_SETTINGS.getFeeAddress().transfer(
-            address(this).balance
-        );
+        if(prepaidFee){
+            require(
+                msg.value >= ILO_SETTINGS.getEthCreationFee(),
+                "Fee not met"
+            );
+            ILO_SETTINGS.getFeeAddress().transfer(
+                address(this).balance
+            );
+        }
 
         require(params.START_BLOCK > block.number, "ilo should start in future");
         require(
@@ -88,8 +91,7 @@ contract ILOFabric is Ownable {
             params.AMOUNT,
             params.TOKEN_PRICE,
             params.LISTING_RATE, 
-            params.LIQUIDITY_PERCENT,
-            ILO_SETTINGS.getTokenFee()
+            params.LIQUIDITY_PERCENT
         );
 
         ILO newILO = new ILO(address(this));
@@ -113,20 +115,25 @@ contract ILOFabric is Ownable {
             params.START_BLOCK,
             params.ACTIVE_BLOCKS,
             params.LOCK_PERIOD,
+            prepaidFee,
             ILO_SETTINGS.getFeeAddress(),
-            ILO_SETTINGS.getBaseFee(),
-            ILO_SETTINGS.getTokenFee()
+            ILO_SETTINGS.getBaseFee()
         );
 
         ILO_EXPOSER.registerILO(address(newILO));
     }
 
-    function getTokensRequired (uint256 _amount, uint256 _tokenPrice, uint256 _listingRate, uint256 _liquidityPercent, uint256 _tokenFee) internal pure returns (uint256) {
+    function getTokensRequired (uint256 _amount, uint256 _tokenPrice, uint256 _listingRate, uint256 _liquidityPercent) internal pure returns (uint256) {
+        // uint256 listingRatePercent = _listingRate * 1000 / _tokenPrice;
+        // uint256 fee = _amount * _tokenFee / 1000;
+        // uint256 amountMinusFee = _amount - fee;
+        // uint256 liquidityRequired = amountMinusFee * _liquidityPercent * listingRatePercent / 1000000;
+        // uint256 tokensRequiredForPresale = _amount + liquidityRequired + fee;
+        // return tokensRequiredForPresale;
+
         uint256 listingRatePercent = _listingRate * 1000 / _tokenPrice;
-        uint256 fee = _amount * _tokenFee / 1000;
-        uint256 amountMinusFee = _amount - fee;
-        uint256 liquidityRequired = amountMinusFee * _liquidityPercent * listingRatePercent / 1000000;
-        uint256 tokensRequiredForPresale = _amount + liquidityRequired + fee;
-        return tokensRequiredForPresale;
+        uint256 liquidityRequired = _amount * _liquidityPercent * listingRatePercent / 1000000;
+        uint256 tokensRequiredForILO = _amount + liquidityRequired;
+        return tokensRequiredForILO;
     }
 }
