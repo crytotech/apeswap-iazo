@@ -157,7 +157,7 @@ contract ILO {
         uint256 tokensSold = amount_in / ILO_INFO.TOKEN_PRICE * (10 ** uint256(ILO_INFO.BASE_TOKEN.decimals()));
         require(tokensSold > 0, '0 tokens bought');
         if (buyer.deposited == 0) {
-            STATUS.NUM_BUYERS += 1;
+            STATUS.NUM_BUYERS++;
         }
         buyer.deposited += amount_in;
         buyer.tokensBought += tokensSold;
@@ -172,8 +172,6 @@ contract ILO {
         if (!ILO_INFO.ILO_SALE_IN_BNB) {
             ILO_INFO.BASE_TOKEN.transferFrom(msg.sender, address(this), amount_in);
         }
-
-        STATUS.LP_GENERATION_COMPLETE = true;
     }
 
     function userWithdraw() external {
@@ -225,10 +223,6 @@ contract ILO {
     }
 
     function updateMaxSpendLimit(uint256 _maxSpend) external onlyILOOwner {
-        ILO_INFO.MAX_SPEND_PER_BUYER = _maxSpend;
-    }
-
-    function updateMaxSpend(uint256 _maxSpend) external {
         ILO_INFO.MAX_SPEND_PER_BUYER = _maxSpend;
     }
 
