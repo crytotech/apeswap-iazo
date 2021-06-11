@@ -30,7 +30,7 @@ contract ILOFabric is Ownable {
     constructor() {
         ILO_EXPOSER = new ILOExposer(address(this));
         ILO_SETTINGS = ILOSettings(
-            0xc837205Affba73922B089Cfe6F0A471D03f2eb09
+            0xE4475182c2dA3d7C37f9174322F34B67fabCD975
         );
     }
 
@@ -84,7 +84,7 @@ contract ILOFabric is Ownable {
         require(params.TOKEN_PRICE > 0, "Invalid token price");
         require(
             params.LIQUIDITY_PERCENT >= 300 && params.LIQUIDITY_PERCENT <= 1000,
-            "MIN LIQUIDITY"
+            "Liquidity percentage too low"
         ); // 30% minimum liquidity lock
 
         uint256 tokensRequired = getTokensRequired(
@@ -117,7 +117,8 @@ contract ILOFabric is Ownable {
             params.LOCK_PERIOD,
             prepaidFee,
             ILO_SETTINGS.getFeeAddress(),
-            ILO_SETTINGS.getBaseFee()
+            ILO_SETTINGS.getBaseFee(),
+            ILO_SETTINGS.getAdminAddress()
         );
 
         ILO_EXPOSER.registerILO(address(newILO));

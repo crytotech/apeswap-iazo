@@ -70,7 +70,6 @@ contract ILO {
         ILO_FABRIC = _ILOFabric;
         ILO_SETTINGS = ILOSettings(0x94b83042B48F239c9CcF1537471334D474E11037);
         LIQUIDITY_LOCKER = LiquidityLocker(0x6a326e0E1a28840DBdf61dbBE01B2A218C15d969);
-        ADMIN_ADDRESS = 0x539EE706ea34a2145b653C995c4245f41450894d;
     }
 
     //Modifier: Only allow admin address to call certain functions
@@ -116,7 +115,8 @@ contract ILO {
         uint256 _lockPeriod,
         bool _prepaidFee,
         address payable _feeAddress,
-        uint256 _baseFee
+        uint256 _baseFee,
+        address _adminAddress
     ) external {
         ILO_TIME_INFO.START_BLOCK = _startBlock;
         ILO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
@@ -125,6 +125,8 @@ contract ILO {
         FEE_INFO.PREPAID_FEE = _prepaidFee;
         FEE_INFO.FEE_ADDRESS = _feeAddress;
         FEE_INFO.BASE_FEE = _baseFee;
+
+        ADMIN_ADDRESS = _adminAddress;
     }
 
     function ILOStatusNumber () public view returns (uint256) {

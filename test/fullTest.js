@@ -1,3 +1,5 @@
+const truffleAssert = require('truffle-assertions');
+
 const ILOFabric = artifacts.require("ILOFabric");
 const ILO = artifacts.require("ILO");
 const ILOSettings = artifacts.require("ILOSettings");
@@ -5,7 +7,7 @@ const ILOExposer = artifacts.require("ILOExposer");
 const Banana = artifacts.require("Banana");
 const WBNB = artifacts.require("WBNB");
 
-contract("ILOFabric", async (accounts) => {
+contract("Successful ILO", async (accounts) => {
     let fabric = null;
     let banana = null;
     let wbnb = null;
@@ -61,7 +63,7 @@ contract("ILOFabric", async (accounts) => {
         const balance = await banana.balanceOf(iloAddress);
         assert.equal(
             balance.valueOf(),
-            1010000000000000000000000, //1307000, //hardcoded for now because might change the getTokensRequired() function
+            1000000000000000000000000, //hardcoded for now because might change the getTokensRequired() function
             "check for received ilo token"
         );
     });
