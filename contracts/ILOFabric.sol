@@ -24,7 +24,7 @@ contract ILOFabric is Ownable {
         uint256 LOCK_PERIOD; // days to lock earned tokens for ILO_OWNER
         uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
         uint256 LIQUIDITY_PERCENT; // Percentage of coins that will be locked in liquidity
-        uint256 LISTING_RATE; // fixed rate at which the token will list on apeswap
+        uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
     }
 
     constructor() {
@@ -39,27 +39,31 @@ contract ILOFabric is Ownable {
         address payable _ILOOwner,
         ERC20 _ILOToken,
         ERC20 _baseToken,
-        bool prepaidFee,
-        uint256[10] memory uint_params
+        bool _prepaidFee,
+        bool _burnRemains,
+        uint256[9] memory uint_params
     ) public payable {
         ILOParams memory params;
         params.TOKEN_PRICE = uint_params[0];
         params.AMOUNT = uint_params[1];
-        params.HARDCAP = uint_params[2];
-        params.SOFTCAP = uint_params[3];
-        params.START_BLOCK = uint_params[4];
-        params.ACTIVE_BLOCKS = uint_params[5];
-        params.LOCK_PERIOD = uint_params[6];
-        params.MAX_SPEND_PER_BUYER = uint_params[7];
-        params.LIQUIDITY_PERCENT = uint_params[8];
-        params.LISTING_RATE = uint_params[9];
+        params.SOFTCAP = uint_params[2];
+        params.START_BLOCK = uint_params[3];
+        params.ACTIVE_BLOCKS = uint_params[4];
+        params.LOCK_PERIOD = uint_params[5];
+        params.MAX_SPEND_PER_BUYER = uint_params[6];
+        params.LIQUIDITY_PERCENT = uint_params[7];
+        if(uint_params[8] == 0){
+            params.LISTING_PRICE = params.TOKEN_PRICE;
+        } else {
+            params.LISTING_PRICE = uint_params[8];
+        }
 
         if (params.LOCK_PERIOD < ILO_SETTINGS.getMinLockPeriod()) {
             params.LOCK_PERIOD = ILO_SETTINGS.getMinLockPeriod();
         }
 
         // Charge ETH fee for contract creation
-        if(prepaidFee){
+        if(_prepaidFee){
             require(
                 msg.value >= ILO_SETTINGS.getEthCreationFee(),
                 "Fee not met"
@@ -80,18 +84,24 @@ contract ILOFabric is Ownable {
         );
 
         require(params.AMOUNT >= 10000, "Minimum divisibility");
-        require(params.HARDCAP > 0, "Invalid hardcap");
         require(params.TOKEN_PRICE > 0, "Invalid token price");
         require(
-            params.LIQUIDITY_PERCENT >= 300 && params.LIQUIDITY_PERCENT <= 1000,
+            params.LIQUIDITY_PERCENT >= 30 && params.LIQUIDITY_PERCENT <= 100,
             "Liquidity percentage too low"
         ); // 30% minimum liquidity lock
+
+        uint256 tokenDecimals = _ILOToken.decimals();
+        require(params.AMOUNT > tokenDecimals);
+        uint256 hardcap = params.AMOUNT * params.TOKEN_PRICE / (10 ** tokenDecimals);
+
 
         uint256 tokensRequired = getTokensRequired(
             params.AMOUNT,
             params.TOKEN_PRICE,
-            params.LISTING_RATE, 
-            params.LIQUIDITY_PERCENT
+            params.LISTING_PRICE, 
+            params.LIQUIDITY_PERCENT,
+            hardcap,
+            tokenDecimals
         );
 
         ILO newILO = new ILO(address(this));
@@ -104,18 +114,19 @@ contract ILOFabric is Ownable {
             _baseToken,
             params.TOKEN_PRICE,
             params.AMOUNT,
-            params.HARDCAP,
+            hardcap,
             params.SOFTCAP,
             params.MAX_SPEND_PER_BUYER,
             params.LIQUIDITY_PERCENT,
-            params.LISTING_RATE
+            params.LISTING_PRICE
         );
 
         newILO.initializeILO2(
             params.START_BLOCK,
             params.ACTIVE_BLOCKS,
             params.LOCK_PERIOD,
-            prepaidFee,
+            _prepaidFee,
+            _burnRemains,
             ILO_SETTINGS.getFeeAddress(),
             ILO_SETTINGS.getBaseFee(),
             ILO_SETTINGS.getAdminAddress()
@@ -124,7 +135,7 @@ contract ILOFabric is Ownable {
         ILO_EXPOSER.registerILO(address(newILO));
     }
 
-    function getTokensRequired (uint256 _amount, uint256 _tokenPrice, uint256 _listingRate, uint256 _liquidityPercent) internal pure returns (uint256) {
+    function getTokensRequired (uint256 _amount, uint256 _tokenPrice, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _hardcap, uint256 _decimals) internal pure returns (uint256) {
         // uint256 listingRatePercent = _listingRate * 1000 / _tokenPrice;
         // uint256 fee = _amount * _tokenFee / 1000;
         // uint256 amountMinusFee = _amount - fee;
@@ -132,9 +143,9 @@ contract ILOFabric is Ownable {
         // uint256 tokensRequiredForPresale = _amount + liquidityRequired + fee;
         // return tokensRequiredForPresale;
 
-        uint256 listingRatePercent = _listingRate * 1000 / _tokenPrice;
-        uint256 liquidityRequired = _amount * _liquidityPercent * listingRatePercent / 1000000;
-        uint256 tokensRequiredForILO = _amount + liquidityRequired;
-        return tokensRequiredForILO;
+        uint256 liquidityRequired = _hardcap * _liquidityPercent * (10 ** _decimals) / 100 / _listingPrice;
+        require(liquidityRequired > 0, "Something wrong with liquidity values");
+        uint256 tokensRequired = _amount + liquidityRequired;
+        return tokensRequired;
     }
 }

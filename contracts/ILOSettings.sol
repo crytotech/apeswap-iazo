@@ -11,7 +11,7 @@ contract ILOSettings is Ownable {
     struct Settings {
         address ADMIN_ADDRESS;
         address payable FEE_ADDRESS;
-        uint256 BASE_FEE; // base fee divided by 1000
+        uint256 BASE_FEE; // base fee percentage
         uint256 ETH_CREATION_FEE; // fee to generate a ILO contract on the platform
         uint256 MIN_ILO_LENGTH; // minimum ilo active blocks
         uint256 MAX_ILO_LENGTH; // maximum ilo active blocks
@@ -21,8 +21,8 @@ contract ILOSettings is Ownable {
     Settings public SETTINGS;
     
     constructor() {
-        SETTINGS.ADMIN_ADDRESS = 0x53C011Cd7F4FCab2C97EF2a1d7c0A60d6d4bA0C4; // 1%
-        SETTINGS.BASE_FEE = 10; // 1%
+        SETTINGS.ADMIN_ADDRESS = 0x53C011Cd7F4FCab2C97EF2a1d7c0A60d6d4bA0C4;
+        SETTINGS.BASE_FEE = 5;
         SETTINGS.ETH_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(msg.sender);
         SETTINGS.MIN_ILO_LENGTH = 28700; // ~1 day

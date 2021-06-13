@@ -6,6 +6,7 @@ const ILOSettings = artifacts.require("ILOSettings");
 const ILOExposer = artifacts.require("ILOExposer");
 const Banana = artifacts.require("Banana");
 const WBNB = artifacts.require("WBNB");
+const LiquidityLocker = artifacts.require("LiquidityLocker");
 
 contract("Successful ILO", async (accounts) => {
     let fabric = null;
@@ -14,6 +15,7 @@ contract("Successful ILO", async (accounts) => {
     let settings = null;
     let exposerAddress = null;
     let exposer = null;
+    let locker = null;
     let ilo = null;
 
     it("Should set all contract variables", async () => {
@@ -21,6 +23,7 @@ contract("Successful ILO", async (accounts) => {
         banana = await Banana.deployed();
         wbnb = await WBNB.deployed();
         settings = await ILOSettings.deployed();
+        locker = await LiquidityLocker.deployed();
         exposerAddress = await fabric.ILO_EXPOSER();
         exposer = await ILOExposer.at(exposerAddress);
     });
@@ -34,7 +37,7 @@ contract("Successful ILO", async (accounts) => {
         await banana.mint("2000000000000000000000000", { from: accounts[1] });
         await banana.approve(fabric.address, "2000000000000000000000000", { from: accounts[1] });
         const blockNumber = await web3.eth.getBlockNumber();
-        await fabric.createILO(accounts[1], banana.address, wbnb.address, true, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000000", "1000000000000000000000", blockNumber + 2, 28700, 60, "2000000000000000000000000", 300, 1], { from: accounts[1], value: 1000000000000000000 })
+        await fabric.createILO(accounts[1], banana.address, wbnb.address, true, false, ["100000000000000000", "21000000000000000000", "1000000000000000000000", blockNumber + 2, 28700, 60, "2000000000000000000000000", "30", "200000000000000000"], { from: accounts[1], value: 1000000000000000000 })
 
         //Fee check2
         const newBalance = await web3.eth.getBalance(FeeAddress);
@@ -57,13 +60,10 @@ contract("Successful ILO", async (accounts) => {
         const iloAddress = await exposer.ILOAtIndex(ILOCount - 1);
         ilo = await ILO.at(iloAddress);
 
-        // ===== GENERAL =====
-        // Tests for general stuff
-
         const balance = await banana.balanceOf(iloAddress);
         assert.equal(
             balance.valueOf(),
-            1000000000000000000000000, //hardcoded for now because might change the getTokensRequired() function
+            21000000000000000000 + 3150000000000000000, //hardcoded for now because might change the getTokensRequired() function
             "check for received ilo token"
         );
     });
@@ -74,6 +74,16 @@ contract("Successful ILO", async (accounts) => {
             iloStatus,
             0,
             "start status should be 0"
+        );
+    });
+
+    it("ilo harcap check", async () => {
+        status = await ilo.ILO_INFO.call();
+
+        assert.equal(
+            status.HARDCAP,
+            2100000000000000000,
+            "hardcap wrong"
         );
     });
 
@@ -90,38 +100,56 @@ contract("Successful ILO", async (accounts) => {
     });
 
     it("Users should be able to buy ILO tokens", async () => {
-        await wbnb.mint("10000000000000000000", { from: accounts[2] });
-        await wbnb.approve(ilo.address, "10000000000000000000", { from: accounts[2] });
-        await ilo.userDeposit("10000000000000000000", { from: accounts[2] });
+        await wbnb.mint("400000000000000000", { from: accounts[2] });
+        await wbnb.approve(ilo.address, "400000000000000000", { from: accounts[2] });
+        await ilo.userDeposit("400000000000000000", { from: accounts[2] });
 
         const buyerInfo = await ilo.BUYERS.call(accounts[2]);
         assert.equal(
             buyerInfo.deposited,
-            "10000000000000000000",
+            "400000000000000000",
             "account deposited check"
         );
         assert.equal(
             buyerInfo.tokensBought,
-            "5000000000000000000",
+            "4000000000000000000",
+            "account bought check"
+        );
+    });
+
+    it("Users should be able to buy limited ILO tokens", async () => {
+        await wbnb.mint("10000000000000000", { from: accounts[3] });
+        await wbnb.approve(ilo.address, "10000000000000000", { from: accounts[3] });
+        await ilo.userDeposit("10000000000000000", { from: accounts[3] });
+
+        const buyerInfo = await ilo.BUYERS.call(accounts[3]);
+        assert.equal(
+            buyerInfo.deposited,
+            "10000000000000000",
+            "account deposited check"
+        );
+        assert.equal(
+            buyerInfo.tokensBought,
+            "100000000000000000",
             "account bought check"
         );
     });
 
     it("Users should be able to buy ILO tokens but not more than hardcap", async () => {
-        await wbnb.mint("2000000000000000000000000", { from: accounts[3] });
-        await wbnb.approve(ilo.address, "2000000000000000000000000", { from: accounts[3] });
-        await ilo.userDeposit("2000000000000000000000000", { from: accounts[3] });
+        await wbnb.mint("12100000000000000000", { from: accounts[4] });
+        await wbnb.approve(ilo.address, "12100000000000000000", { from: accounts[4] });
+        await ilo.userDeposit("12100000000000000000", { from: accounts[4] });
 
-        buyerInfo = await ilo.BUYERS.call(accounts[3]);
+        buyerInfo = await ilo.BUYERS.call(accounts[4]);
 
         assert.equal(
             buyerInfo.deposited,
-            "999990000000000000000000",
+            "1690000000000000000",
             "account deposited check"
         );
         assert.equal(
             buyerInfo.tokensBought,
-            "499995000000000000000000",
+            "16900000000000000000",
             "account bought check"
         );
     });
@@ -135,8 +163,11 @@ contract("Successful ILO", async (accounts) => {
         );
     });
 
+    let wbnbBalance = null;
+
     it("Should add liquidity", async () => {
-        await ilo.addLiquidity();
+        wbnbBalance = await wbnb.balanceOf(accounts[1]);
+        const data = await ilo.addLiquidity();
         status = await ilo.STATUS.call();
 
         assert.equal(
@@ -153,8 +184,51 @@ contract("Successful ILO", async (accounts) => {
 
         assert.equal(
             balanceAfterReceivedTokens - balance,
-            "5000000000000000000",
+            "4000000000000000000",
             "account deposited check"
         );
     });
+
+    it("Should be able to withdraw bought tokens", async () => {
+        const balance = await banana.balanceOf(accounts[3])
+        await ilo.userWithdraw({ from: accounts[3] });
+        const balanceAfterReceivedTokens = await banana.balanceOf(accounts[3])
+
+        assert.equal(
+            balanceAfterReceivedTokens - balance,
+            "100000000000000000",
+            "account deposited check"
+        );
+    });
+
+    it("Should approve locker to spend base token", async () => {
+        const allowance = await wbnb.allowance(ilo.address, locker.address);
+
+        assert.equal(
+            allowance,
+            "630000000000000000",
+            "wrong allowance"
+        );
+    });
+
+    it("Should approve locker to spend ilo token", async () => {
+        const allowance = await banana.allowance(ilo.address, locker.address);
+
+        assert.equal(
+            allowance,
+            "3150000000000000000",
+            "wrong allowance"
+        );
+    });
+
+    it("transfer base to ilo owner", async () => {
+        newWbnbBalance = await wbnb.balanceOf(accounts[1]);
+
+        assert.equal(
+            newWbnbBalance - wbnbBalance,
+            "1470000000000000000",
+            "wrong allowance"
+        );
+    });
+
 }); 
