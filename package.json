@@ -7,17 +7,17 @@
         "example": "example",
         "test": "test"
     },
-    "dependencies": {
-        "@openzeppelin/contracts": "^4.1.0",
-        "bignumber.js": "^9.0.1",
-        "truffle-assertions": "^0.9.2"
+    "scripts": {
+        "test": "truffle test",
+        "compile": "truffle compile"
     },
     "devDependencies": {
         "chai": "^4.3.4",
-        "chai-bignumber": "^3.0.0"
-    },
-    "scripts": {
-        "test": "truffle test"
+        "chai-bignumber": "^3.0.0",
+        "truffle": "^5.3.12",
+        "@openzeppelin/contracts": "^4.1.0",
+        "bignumber.js": "^9.0.1",
+        "truffle-assertions": "^0.9.2"
     },
     "repository": {
         "type": "git",
