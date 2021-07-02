@@ -2,31 +2,27 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
+// TODO: Make upgradeable
+
 /**
     This contract creates the lock on behalf of each ILO. This contract will be whitelisted to bypass the flat rate 
     ETH fee. Please do not use the below locking code in your own contracts as the lock will fail without the ETH fee
 */
-
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ILOExposer.sol";
+import "./IAZOTokenTimelock.sol";
 import "./interface/ERC20.sol";
 
-interface IPresaleFactory {
-    function registerPresale (address _presaleAddress) external;
-    function presaleIsRegistered(address _presaleAddress) external view returns (bool);
-}
-
-interface IUniswapV2Locker {
-    function lockLPToken (address _lpToken, uint256 _amount, uint256 _unlock_date, address payable _referral, bool _fee_in_eth, address payable _withdrawer) external payable;
-}
-
-interface IUniswapV2Factory {
+interface IApeFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
     function createPair(address tokenA, address tokenB) external returns (address pair);
 }
 
-interface IUniswapV2Pair {
+interface IApePair {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
@@ -77,25 +73,27 @@ interface IUniswapV2Pair {
     function initialize(address, address) external;
 }
 
+// FIXME: Can't be ownable if deployed by another contract
+// TODO: Store contracts deployed from this contract
 contract LiquidityLocker is Ownable {
+    using SafeERC20 for IERC20;
+
+    ILOExposer public ILO_EXPOSER;
+    IApeFactory public APE_FACTORY;
     
-    IPresaleFactory public PRESALE_FACTORY;
-    IUniswapV2Locker public UNISWAP_LOCKER;
-    IUniswapV2Factory public UNI_FACTORY;
-    
-    constructor() {
-        PRESALE_FACTORY = IPresaleFactory(0x206EC1d1C0147f5B2b8D302901Bfb6b7CBFAcb09);
-        UNISWAP_LOCKER = IUniswapV2Locker(0xC765bddB93b0D1c1A88282BA0fa6B2d00E3e0c83);
-        UNI_FACTORY = IUniswapV2Factory(0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73);
+    constructor(address iloExposer, address apeFactory) {
+        ILO_EXPOSER = ILOExposer(iloExposer);
+        APE_FACTORY = IApeFactory(apeFactory);
     }
 
+    // TODO: Rename anything that references PRESALE
     /**
         Send in _token0 as the PRESALE token, _token1 as the BASE token (usually WETH) for the check to work. As anyone can create a pair,
         and send WETH to it while a presale is running, but no one should have access to the presale token. If they do and they send it to 
         the pair, scewing the initial liquidity, this function will return true
     */
-    function uniswapPairIsInitialised (address _token0, address _token1) public view returns (bool) {
-        address pairAddress = UNI_FACTORY.getPair(_token0, _token1);
+    function apePairIsInitialised(address _token0, address _token1) public view returns (bool) {
+        address pairAddress = APE_FACTORY.getPair(_token0, _token1);
         if (pairAddress == address(0)) {
             return false;
         }
@@ -106,25 +104,47 @@ contract LiquidityLocker is Ownable {
         return false;
     }
     
-    function lockLiquidity (ERC20 _baseToken, ERC20 _saleToken, uint256 _baseAmount, uint256 _saleAmount, uint256 _unlock_date, address payable _withdrawer) external {
-        require(PRESALE_FACTORY.presaleIsRegistered(msg.sender), 'PRESALE NOT REGISTERED');
-        address pairAddress = UNI_FACTORY.getPair(address(_baseToken), address(_saleToken));
-        ERC20 pair = ERC20(pairAddress);
+    function lockLiquidity(
+        ERC20 _baseToken, 
+        ERC20 _saleToken, 
+        uint256 _baseAmount, 
+        uint256 _saleAmount, 
+        uint256 _unlock_date, 
+        address payable _withdrawer, 
+        address _admin
+    ) external returns (address) {
+        require(ILO_EXPOSER.ILOIsRegistered(msg.sender), 'ILO NOT REGISTERED');
+        address pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
+        IERC20 pair = IERC20(pairAddress);
         if (pairAddress == address(0)) {
-            UNI_FACTORY.createPair(address(_baseToken), address(_saleToken));
-            pairAddress = UNI_FACTORY.getPair(address(_baseToken), address(_saleToken));
+            APE_FACTORY.createPair(address(_baseToken), address(_saleToken));
+            pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
         }
         
         _baseToken.transferFrom(msg.sender, pairAddress, _baseAmount);
         _saleToken.transferFrom(msg.sender, pairAddress, _saleAmount);
 
-        IUniswapV2Pair(pairAddress).mint(address(this));
-        uint256 totalLPTokensMinted = IUniswapV2Pair(pairAddress).balanceOf(address(this));
+        IApePair(pairAddress).mint(address(this));
+        uint256 totalLPTokensMinted = IApePair(pairAddress).balanceOf(address(this));
         require(totalLPTokensMinted != 0 , "LP creation failed");
-    
-        pair.approve(address(UNISWAP_LOCKER), totalLPTokensMinted);
+
         uint256 unlock_date = _unlock_date > 9999999999 ? 9999999999 : _unlock_date;
-        UNISWAP_LOCKER.lockLPToken(pairAddress, totalLPTokensMinted, unlock_date, payable(0), true, _withdrawer);
+        // Maybe use a separate factory so that it can be easily upgraded and used for other purposes?
+        // TODO: Instead of passing an admin address we can pass the settings contract so that it can reference a dynamic admin
+        IAZOTokenTimelock tokenTimelock = new IAZOTokenTimelock(_admin, _withdrawer, unlock_date, true);
+        // TODO: Log the location of the lock
+        // TODO: Will tokens get locked in this contract if these fail?
+        require(tokenTimelock.isTokenTimelock(), 'new TokenTimelock has failed');
+        // TODO: Use a deposit function instead to verify that it was transferred in?
+        pair.safeTransfer(address(tokenTimelock), totalLPTokensMinted);
+        // TODO: emit
+        return address(pair);
+
+
+        // FIXME: Will remove with vesting contract
+        // pair.approve(address(UNISWAP_LOCKER), totalLPTokensMinted);
+        // uint256 unlock_date = _unlock_date > 9999999999 ? 9999999999 : _unlock_date;
+        // UNISWAP_LOCKER.lockLPToken(pairAddress, totalLPTokensMinted, unlock_date, payable(0), true, _withdrawer);
     }
     
 }

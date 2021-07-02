@@ -2,17 +2,34 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
+// FIXME: Review defiyield audit to avoid low risk bugs
+// TODO: Add in media links
+// TODO: Add sweep token functionality to unlock messed up ILOs?
+// TODO: Make upgradeable
+
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/ERC20.sol";
-import "./ILOSettings.sol";
-import "./ILOExposer.sol";
+import "./interface/IILOSettings.sol";
 import "./ILO.sol";
 
-contract ILOFabric is Ownable {
-    ILOExposer public ILO_EXPOSER;
-    ILOSettings public ILO_SETTINGS;
+interface ILiquidityLocker {
+    function isLiquidityLocker() external returns (bool);
+}
+
+interface IILO_EXPOSER {
+    function initializeExposer(address iloFabric) external;
+    function registerILO(address newILO) external;
+}
+
+// TODO: Contract exceed recommended size. Need to make it smaller
+contract ILOFabric {
+    IILO_EXPOSER public ILO_EXPOSER;
+    IILOSettings public ILO_SETTINGS; // TODO: function to update settings contract?
+    ILiquidityLocker public LIQUIDITY_LOCKER; // TODO: function to update liquidity locker contract?
+    address public WBNB;
+
+    bool public isILOFabric = true;
 
     struct ILOParams {
         uint256 TOKEN_PRICE; // cost for 1 ILO_TOKEN in BASE_TOKEN (or BNB)
@@ -27,11 +44,15 @@ contract ILOFabric is Ownable {
         uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
     }
 
-    constructor() {
-        ILO_EXPOSER = new ILOExposer(address(this));
-        ILO_SETTINGS = ILOSettings(
-            0xE4475182c2dA3d7C37f9174322F34B67fabCD975
-        );
+    constructor(address iloExposer, IILOSettings iloSettings, ILiquidityLocker liquidityLocker, address wbnb) {
+        ILO_EXPOSER = IILO_EXPOSER(iloExposer);
+        ILO_EXPOSER.initializeExposer(address(this));
+        ILO_SETTINGS = iloSettings;
+        require(ILO_SETTINGS.isILOSettings(), 'isILOSettings call returns false');
+        LIQUIDITY_LOCKER = liquidityLocker;
+        require(LIQUIDITY_LOCKER.isLiquidityLocker(), 'isLiquidityLocker call returns false');
+        // TODO: verify wbnb?
+        WBNB = wbnb;
     }
 
     // Create new ILO and add address to ILOExposer.
@@ -57,7 +78,7 @@ contract ILOFabric is Ownable {
         } else {
             params.LISTING_PRICE = uint_params[8];
         }
-
+        // If lock period is less than min period then set it to the min period
         if (params.LOCK_PERIOD < ILO_SETTINGS.getMinLockPeriod()) {
             params.LOCK_PERIOD = ILO_SETTINGS.getMinLockPeriod();
         }
@@ -68,6 +89,7 @@ contract ILOFabric is Ownable {
                 msg.value >= ILO_SETTINGS.getEthCreationFee(),
                 "Fee not met"
             );
+            // TODO: This transfers the entire balance of the creation and not only the fee 
             ILO_SETTINGS.getFeeAddress().transfer(
                 address(this).balance
             );
@@ -83,18 +105,23 @@ contract ILOFabric is Ownable {
             "Exceeds max ilo length"
         );
 
+        // TODO: add this value to settings?
         require(params.AMOUNT >= 10000, "Minimum divisibility");
         require(params.TOKEN_PRICE > 0, "Invalid token price");
+        // TODO: add this value to settings?
         require(
             params.LIQUIDITY_PERCENT >= 30 && params.LIQUIDITY_PERCENT <= 100,
             "Liquidity percentage too low"
         ); // 30% minimum liquidity lock
 
         uint256 tokenDecimals = _ILOToken.decimals();
-        require(params.AMOUNT > tokenDecimals);
+        // FIXME: removing as tokenDecimals will never be over 18 and we already check above for greater than 1000
+        // require(params.AMOUNT > tokenDecimals);
         uint256 hardcap = params.AMOUNT * params.TOKEN_PRICE / (10 ** tokenDecimals);
 
+        // TODO: require hardcap is greater than soft cap?
 
+        // NOTE: left here
         uint256 tokensRequired = getTokensRequired(
             params.AMOUNT,
             params.TOKEN_PRICE,
@@ -104,10 +131,9 @@ contract ILOFabric is Ownable {
             tokenDecimals
         );
 
-        ILO newILO = new ILO(address(this));
+        // Deploy a new ILO contract
+        ILO newILO = new ILO(address(ILO_SETTINGS), address(LIQUIDITY_LOCKER), address(WBNB));
         
-        _ILOToken.transferFrom(address(msg.sender), address(newILO), tokensRequired);
-
         newILO.initializeILO(
             _ILOOwner,
             _ILOToken,
@@ -128,13 +154,18 @@ contract ILOFabric is Ownable {
             _prepaidFee,
             _burnRemains,
             ILO_SETTINGS.getFeeAddress(),
-            ILO_SETTINGS.getBaseFee(),
-            ILO_SETTINGS.getAdminAddress()
+            ILO_SETTINGS.getBaseFee()
         );
 
         ILO_EXPOSER.registerILO(address(newILO));
+
+        // NOTE: Moved this to the bottom so tokens don't get locked here
+        _ILOToken.transferFrom(address(msg.sender), address(newILO), tokensRequired);
+
+        // TODO: emit Event
     }
 
+    // FIXME: _tokenPrice
     function getTokensRequired (uint256 _amount, uint256 _tokenPrice, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _hardcap, uint256 _decimals) internal pure returns (uint256) {
         // uint256 listingRatePercent = _listingRate * 1000 / _tokenPrice;
         // uint256 fee = _amount * _tokenFee / 1000;

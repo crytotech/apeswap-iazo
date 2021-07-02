@@ -2,9 +2,17 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
+// TODO: Do we need an indexOf function
+// TODO: sweepTokenLib
+
+
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
+interface IILOFabric {
+    function isILOFabric() external returns (bool);
+}
 
 contract ILOExposer {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -13,15 +21,24 @@ contract ILOExposer {
 
     address public ILO_FABRIC;
 
-    event ILORegistered(address presaleContract);
+    bool public isILOExposer = true;
 
-    constructor(address _ILOFabric) {
-        ILO_FABRIC = _ILOFabric;
+    bool private initialized = false;
+
+    event ILORegistered(address indexed presaleContract);
+
+    function initializeExposer(address iloFabric) external {
+        require(!initialized, "already initialized");
+        require(IILOFabric(iloFabric).isILOFabric(), "address does not have isILOFabric flag");
+        ILO_FABRIC = iloFabric;
+        initialized = true;
     }
 
-    function registerILO(address _iloAddress) public {
+    function registerILO(address _iloAddress) external {
+        require(initialized, "not initialized");
         require(msg.sender == ILO_FABRIC, "Forbidden");
         ILOs.add(_iloAddress);
+        // TODO: Which contract is this supposed to be?
         emit ILORegistered(_iloAddress);
     }
 
