@@ -20,8 +20,8 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-interface IIAZOFabric {
-    function isIAZOFabric() external returns (bool);
+interface IIAZOFactory {
+    function isIAZOFactory() external returns (bool);
 }
 
 contract IAZOExposer {
@@ -29,7 +29,7 @@ contract IAZOExposer {
 
     EnumerableSet.AddressSet private IAZOs;
 
-    address public IAZO_FABRIC;
+    address public IAZO_FACTORY;
 
     bool public isIAZOExposer = true;
 
@@ -37,16 +37,16 @@ contract IAZOExposer {
 
     event IAZORegistered(address indexed presaleContract);
 
-    function initializeExposer(address iazoFabric) external {
+    function initializeExposer(address iazoFactory) external {
         require(!initialized, "already initialized");
-        require(IIAZOFabric(iazoFabric).isIAZOFabric(), "address does not have isIAZOFabric flag");
-        IAZO_FABRIC = iazoFabric;
+        require(IIAZOFactory(iazoFactory).isIAZOFactory(), "address does not have isIAZOFactory flag");
+        IAZO_FACTORY = iazoFactory;
         initialized = true;
     }
 
     function registerIAZO(address _iazoAddress) external {
         require(initialized, "not initialized");
-        require(msg.sender == IAZO_FABRIC, "Forbidden");
+        require(msg.sender == IAZO_FACTORY, "Forbidden");
         IAZOs.add(_iazoAddress);
         // TODO: Which contract is this supposed to be?
         emit IAZORegistered(_iazoAddress);

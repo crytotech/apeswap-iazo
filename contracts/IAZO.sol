@@ -17,6 +17,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/ERC20.sol";
 import "./interface/IWBNB.sol";
+// TODO: Make as interfaces
 import "./IAZOSettings.sol";
 import "./IAZOLiquidityLocker.sol";
 //import "./interface/IIAZOSettings.sol"; // TODO: Update and import this
@@ -97,7 +98,7 @@ contract IAZO {
     IAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
     IWBNB WBNB;
     /// @dev reference variable
-    address public IAZO_FABRIC;
+    address public IAZO_FACTORY;
     // addresses
     address public BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     address public TOKEN_LOCK_ADDRESS = 0x0000000000000000000000000000000000000000;
@@ -106,7 +107,7 @@ contract IAZO {
 
 
     constructor(address _IAZOSettings, address _IAZOLiquidityLocker, address _wbnb) {
-        IAZO_FABRIC = msg.sender;
+        IAZO_FACTORY = msg.sender;
         IAZO_SETTINGS = IAZOSettings(_IAZOSettings);
         IAZO_LIQUIDITY_LOCKER = IAZOLiquidityLocker(_IAZOLiquidityLocker);
         WBNB = IWBNB(_wbnb);
@@ -125,8 +126,8 @@ contract IAZO {
     }
 
     /// @notice Modifier: Only allow IAZO owner address to call certain functions
-    modifier onlyIAZOFabric() {
-        require(msg.sender == IAZO_FABRIC, "IAZO_FABRIC only");
+    modifier onlyIAZOFactory() {
+        require(msg.sender == IAZO_FACTORY, "IAZO_FACTORY only");
         _;
     }
 
@@ -142,7 +143,7 @@ contract IAZO {
         uint256 _liquidityPercent,
         // TODO: What is _listingRate vs _tokenPrice?
         uint256 _listingRate
-    ) external onlyIAZOFabric {
+    ) external onlyIAZOFactory {
         // TODO: Add require statement to verify tokens are not the same or address(0)
         IAZO_INFO.IAZO_OWNER = _iazoOwner;
         IAZO_INFO.IAZO_TOKEN = _iazoToken;
@@ -168,7 +169,7 @@ contract IAZO {
         bool _burnRemains,
         address payable _feeAddress,
         uint256 _baseFee
-    ) external onlyIAZOFabric {
+    ) external onlyIAZOFactory {
         IAZO_TIME_INFO.START_BLOCK = _startBlock;
         IAZO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
         IAZO_TIME_INFO.LOCK_PERIOD = _lockPeriod;

@@ -28,7 +28,7 @@ interface IIAZOLiquidityLocker {
 }
 
 interface IIAZO_EXPOSER {
-    function initializeExposer(address iazoFabric) external;
+    function initializeExposer(address iazoFactory) external;
     function registerIAZO(address newIAZO) external;
 }
 
@@ -36,10 +36,10 @@ interface IIAZO_EXPOSER {
 contract IAZOFactory {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS; // TODO: function to update settings contract?
-    IIAZOLiquidityLocker public LIQUIDITY_LOCKER; // TODO: function to update liquidity locker contract?
+    IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER; // TODO: function to update liquidity locker contract?
     address public WBNB;
 
-    bool public isIAZOFabric = true;
+    bool public isIAZOFactory = true;
 
     struct IAZOParams {
         uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or BNB)
@@ -54,13 +54,13 @@ contract IAZOFactory {
         uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
     }
 
-    constructor(address iazoExposer, IIAZOSettings iazoSettings, ILiquidityLocker liquidityLocker, address wbnb) {
+    constructor(address iazoExposer, IIAZOSettings iazoSettings, IIAZOLiquidityLocker iazoliquidityLocker, address wbnb) {
         IAZO_EXPOSER = IIAZO_EXPOSER(iazoExposer);
         IAZO_EXPOSER.initializeExposer(address(this));
         IAZO_SETTINGS = iazoSettings;
         require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
-        LIQUIDITY_LOCKER = liquidityLocker;
-        require(LIQUIDITY_LOCKER.isLiquidityLocker(), 'isLiquidityLocker call returns false');
+        IAZO_LIQUIDITY_LOCKER = iazoliquidityLocker;
+        require(IAZO_LIQUIDITY_LOCKER.isLiquidityLocker(), 'isLiquidityLocker call returns false');
         // TODO: verify wbnb?
         WBNB = wbnb;
     }
@@ -99,7 +99,7 @@ contract IAZOFactory {
                 msg.value >= IAZO_SETTINGS.getEthCreationFee(),
                 "Fee not met"
             );
-            // TODO: This transfers the entire balance of the creation and not only the fee 
+            /// @notice the entire funds sent in the tx will be taken as long as it's above the ethCreationFee
             IAZO_SETTINGS.getFeeAddress().transfer(
                 address(this).balance
             );
@@ -128,10 +128,9 @@ contract IAZOFactory {
         // FIXME: removing as tokenDecimals will never be over 18 and we already check above for greater than 1000
         // require(params.AMOUNT > tokenDecimals);
         uint256 hardcap = params.AMOUNT * params.TOKEN_PRICE / (10 ** tokenDecimals);
+        // Check that the hardcap is greater than or equal to softcap
+        require(hardcap >= params.SOFTCAP, 'softcap is greater than hardcap');
 
-        // TODO: require hardcap is greater than soft cap?
-
-        // NOTE: left here
         uint256 tokensRequired = getTokensRequired(
             params.AMOUNT,
             params.TOKEN_PRICE,
@@ -142,7 +141,7 @@ contract IAZOFactory {
         );
 
         // Deploy a new IAZO contract
-        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(LIQUIDITY_LOCKER), address(WBNB));
+        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER), address(WBNB));
         
         newIAZO.initializeIAZO(
             _IAZOOwner,
