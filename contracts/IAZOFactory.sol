@@ -23,7 +23,7 @@ import "./interface/ERC20.sol";
 import "./interface/IIAZOSettings.sol";
 import "./IAZO.sol";
 
-interface ILiquidityLocker {
+interface IIAZOLiquidityLocker {
     function isLiquidityLocker() external returns (bool);
 }
 
@@ -36,7 +36,7 @@ interface IIAZO_EXPOSER {
 contract IAZOFactory {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS; // TODO: function to update settings contract?
-    ILiquidityLocker public LIQUIDITY_LOCKER; // TODO: function to update liquidity locker contract?
+    IIAZOLiquidityLocker public LIQUIDITY_LOCKER; // TODO: function to update liquidity locker contract?
     address public WBNB;
 
     bool public isIAZOFabric = true;
