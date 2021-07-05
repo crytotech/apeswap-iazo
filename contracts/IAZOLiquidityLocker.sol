@@ -5,15 +5,25 @@
 // TODO: Make upgradeable
 
 /**
-    This contract creates the lock on behalf of each ILO. This contract will be whitelisted to bypass the flat rate 
+    This contract creates the lock on behalf of each IAZO. This contract will be whitelisted to bypass the flat rate 
     ETH fee. Please do not use the below locking code in your own contracts as the lock will fail without the ETH fee
 */
 pragma solidity ^0.8.4;
 
+/*
+ * ApeSwapFinance 
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com    
+ * Twitter:         https://twitter.com/ape_swap 
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./ILOExposer.sol";
+import "./IAZOExposer.sol";
 import "./IAZOTokenTimelock.sol";
 import "./interface/ERC20.sol";
 
@@ -75,14 +85,14 @@ interface IApePair {
 
 // FIXME: Can't be ownable if deployed by another contract
 // TODO: Store contracts deployed from this contract
-contract LiquidityLocker is Ownable {
+contract IAZOLiquidityLocker is Ownable {
     using SafeERC20 for IERC20;
 
-    ILOExposer public ILO_EXPOSER;
+    IAZOExposer public IAZO_EXPOSER;
     IApeFactory public APE_FACTORY;
     
-    constructor(address iloExposer, address apeFactory) {
-        ILO_EXPOSER = ILOExposer(iloExposer);
+    constructor(address iazoExposer, address apeFactory) {
+        IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
     }
 
@@ -113,7 +123,7 @@ contract LiquidityLocker is Ownable {
         address payable _withdrawer, 
         address _admin
     ) external returns (address) {
-        require(ILO_EXPOSER.ILOIsRegistered(msg.sender), 'ILO NOT REGISTERED');
+        require(IAZO_EXPOSER.IAZOIsRegistered(msg.sender), 'IAZO NOT REGISTERED');
         address pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
         IERC20 pair = IERC20(pairAddress);
         if (pairAddress == address(0)) {

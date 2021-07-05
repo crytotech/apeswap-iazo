@@ -4,67 +4,77 @@
 
 // FIXME: Review defiyield audit to avoid low risk bugs
 // TODO: Add in media links
-// TODO: Add sweep token functionality to unlock messed up ILOs?
+// TODO: Add sweep token functionality to unlock messed up IAZOs?
 // TODO: Make upgradeable
 
 pragma solidity ^0.8.4;
 
+/*
+ * ApeSwapFinance 
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com    
+ * Twitter:         https://twitter.com/ape_swap 
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
+
 import "./interface/ERC20.sol";
-import "./interface/IILOSettings.sol";
-import "./ILO.sol";
+import "./interface/IIAZOSettings.sol";
+import "./IAZO.sol";
 
 interface ILiquidityLocker {
     function isLiquidityLocker() external returns (bool);
 }
 
-interface IILO_EXPOSER {
-    function initializeExposer(address iloFabric) external;
-    function registerILO(address newILO) external;
+interface IIAZO_EXPOSER {
+    function initializeExposer(address iazoFabric) external;
+    function registerIAZO(address newIAZO) external;
 }
 
 // TODO: Contract exceed recommended size. Need to make it smaller
-contract ILOFabric {
-    IILO_EXPOSER public ILO_EXPOSER;
-    IILOSettings public ILO_SETTINGS; // TODO: function to update settings contract?
+contract IAZOFactory {
+    IIAZO_EXPOSER public IAZO_EXPOSER;
+    IIAZOSettings public IAZO_SETTINGS; // TODO: function to update settings contract?
     ILiquidityLocker public LIQUIDITY_LOCKER; // TODO: function to update liquidity locker contract?
     address public WBNB;
 
-    bool public isILOFabric = true;
+    bool public isIAZOFabric = true;
 
-    struct ILOParams {
-        uint256 TOKEN_PRICE; // cost for 1 ILO_TOKEN in BASE_TOKEN (or BNB)
-        uint256 AMOUNT; // AMOUNT of ILO_TOKENS for sale
+    struct IAZOParams {
+        uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or BNB)
+        uint256 AMOUNT; // AMOUNT of IAZO_TOKENS for sale
         uint256 HARDCAP; // HARDCAP of earnings.
-        uint256 SOFTCAP; // SOFTCAP for earning. if not reached ILO is cancelled
-        uint256 START_BLOCK; // block to start ILO
-        uint256 ACTIVE_BLOCKS; // end of ILO -> START_BLOCK + ACTIVE_BLOCKS
-        uint256 LOCK_PERIOD; // days to lock earned tokens for ILO_OWNER
+        uint256 SOFTCAP; // SOFTCAP for earning. if not reached IAZO is cancelled
+        uint256 START_BLOCK; // block to start IAZO
+        uint256 ACTIVE_BLOCKS; // end of IAZO -> START_BLOCK + ACTIVE_BLOCKS
+        uint256 LOCK_PERIOD; // days to lock earned tokens for IAZO_OWNER
         uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
         uint256 LIQUIDITY_PERCENT; // Percentage of coins that will be locked in liquidity
         uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
     }
 
-    constructor(address iloExposer, IILOSettings iloSettings, ILiquidityLocker liquidityLocker, address wbnb) {
-        ILO_EXPOSER = IILO_EXPOSER(iloExposer);
-        ILO_EXPOSER.initializeExposer(address(this));
-        ILO_SETTINGS = iloSettings;
-        require(ILO_SETTINGS.isILOSettings(), 'isILOSettings call returns false');
+    constructor(address iazoExposer, IIAZOSettings iazoSettings, ILiquidityLocker liquidityLocker, address wbnb) {
+        IAZO_EXPOSER = IIAZO_EXPOSER(iazoExposer);
+        IAZO_EXPOSER.initializeExposer(address(this));
+        IAZO_SETTINGS = iazoSettings;
+        require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
         LIQUIDITY_LOCKER = liquidityLocker;
         require(LIQUIDITY_LOCKER.isLiquidityLocker(), 'isLiquidityLocker call returns false');
         // TODO: verify wbnb?
         WBNB = wbnb;
     }
 
-    // Create new ILO and add address to ILOExposer.
-    function createILO(
-        address payable _ILOOwner,
-        ERC20 _ILOToken,
+    // Create new IAZO and add address to IAZOExposer.
+    function createIAZO(
+        address payable _IAZOOwner,
+        ERC20 _IAZOToken,
         ERC20 _baseToken,
         bool _prepaidFee,
         bool _burnRemains,
         uint256[9] memory uint_params
     ) public payable {
-        ILOParams memory params;
+        IAZOParams memory params;
         params.TOKEN_PRICE = uint_params[0];
         params.AMOUNT = uint_params[1];
         params.SOFTCAP = uint_params[2];
@@ -79,30 +89,30 @@ contract ILOFabric {
             params.LISTING_PRICE = uint_params[8];
         }
         // If lock period is less than min period then set it to the min period
-        if (params.LOCK_PERIOD < ILO_SETTINGS.getMinLockPeriod()) {
-            params.LOCK_PERIOD = ILO_SETTINGS.getMinLockPeriod();
+        if (params.LOCK_PERIOD < IAZO_SETTINGS.getMinLockPeriod()) {
+            params.LOCK_PERIOD = IAZO_SETTINGS.getMinLockPeriod();
         }
 
         // Charge ETH fee for contract creation
         if(_prepaidFee){
             require(
-                msg.value >= ILO_SETTINGS.getEthCreationFee(),
+                msg.value >= IAZO_SETTINGS.getEthCreationFee(),
                 "Fee not met"
             );
             // TODO: This transfers the entire balance of the creation and not only the fee 
-            ILO_SETTINGS.getFeeAddress().transfer(
+            IAZO_SETTINGS.getFeeAddress().transfer(
                 address(this).balance
             );
         }
 
-        require(params.START_BLOCK > block.number, "ilo should start in future");
+        require(params.START_BLOCK > block.number, "iazo should start in future");
         require(
-            params.ACTIVE_BLOCKS >= ILO_SETTINGS.getMinILOLength(), 
-            "ilo length not long enough"
+            params.ACTIVE_BLOCKS >= IAZO_SETTINGS.getMinIAZOLength(), 
+            "iazo length not long enough"
         );
         require(
-            params.ACTIVE_BLOCKS <= ILO_SETTINGS.getMaxILOLength(), 
-            "Exceeds max ilo length"
+            params.ACTIVE_BLOCKS <= IAZO_SETTINGS.getMaxIAZOLength(), 
+            "Exceeds max iazo length"
         );
 
         // TODO: add this value to settings?
@@ -114,7 +124,7 @@ contract ILOFabric {
             "Liquidity percentage too low"
         ); // 30% minimum liquidity lock
 
-        uint256 tokenDecimals = _ILOToken.decimals();
+        uint256 tokenDecimals = _IAZOToken.decimals();
         // FIXME: removing as tokenDecimals will never be over 18 and we already check above for greater than 1000
         // require(params.AMOUNT > tokenDecimals);
         uint256 hardcap = params.AMOUNT * params.TOKEN_PRICE / (10 ** tokenDecimals);
@@ -131,12 +141,12 @@ contract ILOFabric {
             tokenDecimals
         );
 
-        // Deploy a new ILO contract
-        ILO newILO = new ILO(address(ILO_SETTINGS), address(LIQUIDITY_LOCKER), address(WBNB));
+        // Deploy a new IAZO contract
+        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(LIQUIDITY_LOCKER), address(WBNB));
         
-        newILO.initializeILO(
-            _ILOOwner,
-            _ILOToken,
+        newIAZO.initializeIAZO(
+            _IAZOOwner,
+            _IAZOToken,
             _baseToken,
             params.TOKEN_PRICE,
             params.AMOUNT,
@@ -147,20 +157,20 @@ contract ILOFabric {
             params.LISTING_PRICE
         );
 
-        newILO.initializeILO2(
+        newIAZO.initializeIAZO2(
             params.START_BLOCK,
             params.ACTIVE_BLOCKS,
             params.LOCK_PERIOD,
             _prepaidFee,
             _burnRemains,
-            ILO_SETTINGS.getFeeAddress(),
-            ILO_SETTINGS.getBaseFee()
+            IAZO_SETTINGS.getFeeAddress(),
+            IAZO_SETTINGS.getBaseFee()
         );
 
-        ILO_EXPOSER.registerILO(address(newILO));
+        IAZO_EXPOSER.registerIAZO(address(newIAZO));
 
         // NOTE: Moved this to the bottom so tokens don't get locked here
-        _ILOToken.transferFrom(address(msg.sender), address(newILO), tokensRequired);
+        _IAZOToken.transferFrom(address(msg.sender), address(newIAZO), tokensRequired);
 
         // TODO: emit Event
     }

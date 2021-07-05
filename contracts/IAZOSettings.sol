@@ -4,30 +4,40 @@
 
 pragma solidity ^0.8.4;
 
+/*
+ * ApeSwapFinance 
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com    
+ * Twitter:         https://twitter.com/ape_swap 
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
+
 // TODO: Add a burn address, burn fee and add a burn token
-contract ILOSettings {
+contract IAZOSettings {
 
     struct Settings {
         address ADMIN_ADDRESS;
         address payable FEE_ADDRESS;
         uint256 BASE_FEE; // base fee percentage
         uint256 MAX_BASE_FEE; // max base fee percentage
-        uint256 ETH_CREATION_FEE; // fee to generate a ILO contract on the platform
-        uint256 MIN_ILO_LENGTH; // minimum ilo active blocks
-        uint256 MAX_ILO_LENGTH; // maximum ilo active blocks
+        uint256 ETH_CREATION_FEE; // fee to generate a IAZO contract on the platform
+        uint256 MIN_IAZO_LENGTH; // minimum iazo active blocks
+        uint256 MAX_IAZO_LENGTH; // maximum iazo active blocks
         uint256 MIN_LOCK_PERIOD;
     }
 
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
     event UpdateFeeAddress(address indexed previousFeeAddress, address indexed newFeeAddress);
     event UpdateFees(uint256 previousBaseFee, uint256 newBaseFee, uint256 previousETHFee, uint256 newETHFee);
-    event UpdateMinILOLength(uint256 previousMinLength, uint256 newMinLength);
-    event UpdateMaxILOLength(uint256 previousMaxLength, uint256 newMaxLength);
+    event UpdateMinIAZOLength(uint256 previousMinLength, uint256 newMinLength);
+    event UpdateMaxIAZOLength(uint256 previousMaxLength, uint256 newMaxLength);
     event UpdateMinLockPeriod(uint256 previousMinLockPeriod, uint256 newMinLockPeriod);
 
     Settings public SETTINGS;
 
-    bool public isILOSettings = true;
+    bool public isIAZOSettings = true;
     
     constructor(address admin, address feeAddress) {
         SETTINGS.ADMIN_ADDRESS = admin;
@@ -39,8 +49,8 @@ contract ILOSettings {
         // FIXME: pass fee-address into constructor? Currently msg.sender is a contract
         SETTINGS.FEE_ADDRESS = payable(feeAddress);
         // TODO: Update to 1 hour?
-        SETTINGS.MIN_ILO_LENGTH = 28700; // ~1 day
-        SETTINGS.MAX_ILO_LENGTH = 602700; // ~3 weeks (when 28700 blocks in 1 day) 
+        SETTINGS.MIN_IAZO_LENGTH = 28700; // ~1 day
+        SETTINGS.MAX_IAZO_LENGTH = 602700; // ~3 weeks (when 28700 blocks in 1 day) 
         // TODO: Update min lock period?
         // TODO: Do we need to use MIN_LOCK_PERIOD in LiquidityLocker?
         SETTINGS.MIN_LOCK_PERIOD = 28; // in days
@@ -62,12 +72,12 @@ contract ILOSettings {
         return SETTINGS.ADMIN_ADDRESS == toCheck;
     }
 
-    function getMaxILOLength() external view returns (uint256) {
-        return SETTINGS.MAX_ILO_LENGTH;
+    function getMaxIAZOLength() external view returns (uint256) {
+        return SETTINGS.MAX_IAZO_LENGTH;
     }
 
-    function getMinILOLength() external view returns (uint256) {
-        return SETTINGS.MIN_ILO_LENGTH;
+    function getMinIAZOLength() external view returns (uint256) {
+        return SETTINGS.MIN_IAZO_LENGTH;
     }
     
     function getBaseFee() external view returns (uint256) {
@@ -112,16 +122,16 @@ contract ILOSettings {
         emit UpdateFees(previousBaseFee, SETTINGS.BASE_FEE, previousETHFee, SETTINGS.ETH_CREATION_FEE);
     }
 
-    function setMaxILOLength(uint256 _maxLength) external onlyAdmin {
-        uint256 previousMaxLength = SETTINGS.MAX_ILO_LENGTH;
-        SETTINGS.MAX_ILO_LENGTH = _maxLength;
-        emit UpdateMaxILOLength(previousMaxLength, SETTINGS.MAX_ILO_LENGTH);
+    function setMaxIAZOLength(uint256 _maxLength) external onlyAdmin {
+        uint256 previousMaxLength = SETTINGS.MAX_IAZO_LENGTH;
+        SETTINGS.MAX_IAZO_LENGTH = _maxLength;
+        emit UpdateMaxIAZOLength(previousMaxLength, SETTINGS.MAX_IAZO_LENGTH);
     }  
 
-    function setMinILOLength(uint256 _minLength) external onlyAdmin {
-        uint256 previousMinLength = SETTINGS.MIN_ILO_LENGTH;
-        SETTINGS.MIN_ILO_LENGTH = _minLength;
-        emit UpdateMinILOLength(previousMinLength, SETTINGS.MIN_ILO_LENGTH);
+    function setMinIAZOLength(uint256 _minLength) external onlyAdmin {
+        uint256 previousMinLength = SETTINGS.MIN_IAZO_LENGTH;
+        SETTINGS.MIN_IAZO_LENGTH = _minLength;
+        emit UpdateMinIAZOLength(previousMinLength, SETTINGS.MIN_IAZO_LENGTH);
     }   
 
     function setMinLockPeriod(uint256 _minLockPeriod) external onlyAdmin {

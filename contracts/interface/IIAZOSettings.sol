@@ -4,7 +4,7 @@
 
 pragma solidity ^0.8.4;
 
-interface IILOSettings {
+interface IIAZOSettings {
     function SETTINGS()
         external
         view
@@ -14,18 +14,18 @@ interface IILOSettings {
             uint256 BASE_FEE,
             uint256 MAX_BASE_FEE,
             uint256 ETH_CREATION_FEE,
-            uint256 MIN_ILO_LENGTH,
-            uint256 MAX_ILO_LENGTH,
+            uint256 MIN_IAZO_LENGTH,
+            uint256 MAX_IAZO_LENGTH,
             uint256 MIN_LOCK_PERIOD
         );
 
-    function isILOSettings() external view returns (bool);
+    function isIAZOSettings() external view returns (bool);
 
     function getAdminAddress() external view returns (address);
 
-    function getMaxILOLength() external view returns (uint256);
+    function getMaxIAZOLength() external view returns (uint256);
 
-    function getMinILOLength() external view returns (uint256);
+    function getMinIAZOLength() external view returns (uint256);
 
     function getBaseFee() external view returns (uint256);
 
@@ -43,9 +43,9 @@ interface IILOSettings {
 
     function setFees(uint256 _baseFee, uint256 _ethCreationFee) external;
 
-    function setMaxILOLength(uint256 _maxLength) external;
+    function setMaxIAZOLength(uint256 _maxLength) external;
 
-    function setMinILOLength(uint256 _minLength) external;
+    function setMinIAZOLength(uint256 _minLength) external;
 
     function setMinLockPeriod(uint256 _minLockPeriod) external;
 }
