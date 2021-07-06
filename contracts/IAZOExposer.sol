@@ -2,9 +2,7 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-// TODO: sweepTokenLib
-
-pragma solidity ^0.8.4;
+pragma solidity 0.8.4;
 
 /*
  * ApeSwapFinance 
@@ -17,12 +15,14 @@ pragma solidity ^0.8.4;
  */
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IIAZOFactory {
     function isIAZOFactory() external returns (bool);
 }
 
-contract IAZOExposer {
+contract IAZOExposer is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     address public IAZO_FACTORY;
@@ -69,5 +69,13 @@ contract IAZOExposer {
 
     function IAZOsLength() public view returns (uint256) {
         return IAZOs.length();
+    }
+
+    /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
+    ///   Tokens are sent to owner
+    /// @param token The address of the ERC20 token to sweep
+    function sweepToken(IERC20 token) external onlyOwner {
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(msg.sender, balance);
     }
 }
