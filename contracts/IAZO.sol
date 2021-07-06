@@ -17,11 +17,8 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/ERC20.sol";
 import "./interface/IWBNB.sol";
-// TODO: Make as interfaces
-import "./IAZOSettings.sol";
-import "./IAZOLiquidityLocker.sol";
-//import "./interface/IIAZOSettings.sol"; // TODO: Update and import this
-
+import "./interface/IIAZOSettings.sol";
+import "./interface/IIAZOLiquidityLocker.sol";
 // TODO: Add sweep token functionality 
 
 /**
@@ -94,8 +91,8 @@ contract IAZO {
     IAZOStatus public STATUS;
     FeeInfo public FEE_INFO;
     // contracts
-    IAZOSettings public IAZO_SETTINGS;
-    IAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
+    IIAZOSettings public IAZO_SETTINGS;
+    IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
     IWBNB WBNB;
     /// @dev reference variable
     address public IAZO_FACTORY;
@@ -108,8 +105,8 @@ contract IAZO {
 
     constructor(address _IAZOSettings, address _IAZOLiquidityLocker, address _wbnb) {
         IAZO_FACTORY = msg.sender;
-        IAZO_SETTINGS = IAZOSettings(_IAZOSettings);
-        IAZO_LIQUIDITY_LOCKER = IAZOLiquidityLocker(_IAZOLiquidityLocker);
+        IAZO_SETTINGS = IIAZOSettings(_IAZOSettings);
+        IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_IAZOLiquidityLocker);
         WBNB = IWBNB(_wbnb);
     }
 
