@@ -6,7 +6,7 @@
 // TODO: Add sweep token functionality to unlock messed up IAZOs?
 // TODO: Make upgradeable
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.4;
 
 /*
  * ApeSwapFinance 
@@ -31,14 +31,14 @@ contract IAZOFactory {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
-    IWBNB public WBNB;
+    IWNative public WNATIVE;
 
     bool public isIAZOFactory = true;
 
     event IAZOCreated(address indexed newIAZO);
 
     struct IAZOParams {
-        uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or BNB)
+        uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or NATIVE)
         uint256 AMOUNT; // AMOUNT of IAZO_TOKENS for sale
         uint256 HARDCAP; // HARDCAP of earnings.
         uint256 SOFTCAP; // SOFTCAP for earning. if not reached IAZO is cancelled
@@ -50,14 +50,14 @@ contract IAZOFactory {
         uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
     }
 
-    constructor(address iazoExposer, IIAZOSettings iazoSettings, IIAZOLiquidityLocker iazoliquidityLocker, address wbnb) {
-        IAZO_EXPOSER = IIAZO_EXPOSER(iazoExposer);
+    constructor(IIAZO_EXPOSER iazoExposer, IIAZOSettings iazoSettings, IIAZOLiquidityLocker iazoliquidityLocker, IWNative wnative) {
+        IAZO_EXPOSER = iazoExposer;
         IAZO_EXPOSER.initializeExposer(address(this));
         IAZO_SETTINGS = iazoSettings;
         require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
         IAZO_LIQUIDITY_LOCKER = iazoliquidityLocker;
         require(IAZO_LIQUIDITY_LOCKER.isIAZOLiquidityLocker(), 'isIAZOLiquidityLocker call returns false');
-        WBNB = IWBNB(wbnb);
+        WNATIVE = wnative;
     }
 
     // Create new IAZO and add address to IAZOExposer.
@@ -84,10 +84,12 @@ contract IAZOFactory {
         } else {
             params.LISTING_PRICE = uint_params[8];
         }
-        // If lock period is less than min period then set it to the min period
-        if (params.LOCK_PERIOD < IAZO_SETTINGS.getMinLockPeriod()) {
-            params.LOCK_PERIOD = IAZO_SETTINGS.getMinLockPeriod();
-        }
+
+        // Check that the unlock time was not sent in ms
+        // This timestamp is Nov 20 2286
+        require(params.LOCK_PERIOD < 9999999999, 'unlock time is too large ');
+        // Lock period must be greater than the min lock period
+        require(params.LOCK_PERIOD >= IAZO_SETTINGS.getMinLockPeriod(), 'Lock period too low');
 
         // Charge ETH fee for contract creation
         if(_prepaidFee){
@@ -135,7 +137,7 @@ contract IAZOFactory {
         );
 
         // Deploy a new IAZO contract
-        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER), WBNB);
+        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER), WNATIVE);
         
         newIAZO.initializeIAZO(
             _IAZOOwner,

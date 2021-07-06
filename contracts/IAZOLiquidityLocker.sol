@@ -136,8 +136,8 @@ contract IAZOLiquidityLocker is Ownable {
         address payable _withdrawer, 
         address _admin
     ) external returns (address) {
+        // Must be from a registered IAZO contract
         require(IAZO_EXPOSER.IAZOIsRegistered(msg.sender), 'IAZO NOT REGISTERED');
-        require(_unlock_date <= 9999999999, 'unlock time is too large');
 
         address pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
         IERC20 pair = IERC20(pairAddress);
@@ -155,6 +155,7 @@ contract IAZOLiquidityLocker is Ownable {
 
         // TODO: Instead of passing an admin address we can pass the settings contract so that it can reference a dynamic admin
         IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(_admin, _withdrawer, _unlock_date, true);
+        IApePair(pairAddress).approve(address(iazoTokenTimelock), totalLPTokensMinted);
         iazoTokenTimelock.deposit(pair, totalLPTokensMinted);
         // TODO: Log the location of the lock
         emit IAZOLiquidityLocked(msg.sender, iazoTokenTimelock, pairAddress, totalLPTokensMinted);
