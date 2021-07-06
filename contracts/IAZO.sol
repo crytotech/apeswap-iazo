@@ -207,6 +207,7 @@ contract IAZO {
 
     // TODO: It is risky to make a function payable when sometimes it takes tokens. Users could send BNB along with their token deposit 
     function userDepositPrivate (uint256 _amount) private {
+        // Check that IAZO is in the ACTIVE state for user deposits
         require(getIAZOState() == 1, 'IAZO not active');
         BuyerInfo storage buyer = BUYERS[msg.sender];
 
@@ -241,21 +242,19 @@ contract IAZO {
     /// @notice The function users call to withdraw funds
     function userWithdraw() external {
         uint256 currentIAZOState = getIAZOState();
-        // TODO: Combine HARDCAP_MET and SUCCESS?
         require(
             currentIAZOState == 2 || // SUCCESS
             currentIAZOState == 3 || // HARD_CAP_MET
-            currentIAZOState == 4, // FAILED 
+            currentIAZOState == 4,   // FAILED 
             'Invalid IAZO state withdraw'
         );
        
-       // TODO: Can user funds be removed?
        // Failed
-       if(currentIAZOState == 4){ 
+       if(currentIAZOState == 4) { 
            userWithdrawFailedPrivate();
        }
-        // Success
-       if(currentIAZOState == 2 || currentIAZOState == 3){ 
+        // Success / hardcap met
+       if(currentIAZOState == 2 || currentIAZOState == 3) { 
            userWithdrawSuccessPrivate();
        }
     }
@@ -311,6 +310,7 @@ contract IAZO {
     function addLiquidity() external {      
         require(!STATUS.LP_GENERATION_COMPLETE, 'GENERATION COMPLETE');
         uint256 currentIAZOState = getIAZOState();
+        // Check if IAZO SUCCESS or HARDCAT met
         require(currentIAZOState == 2 || currentIAZOState == 3, 'IAZO failed or still in progress'); // SUCCESS
 
         // FIXME: IF pair is initalized and has tokens in it before it gets here this will short circuit 
