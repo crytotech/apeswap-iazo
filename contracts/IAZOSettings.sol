@@ -41,6 +41,7 @@ contract IAZOSettings {
     
     constructor(address admin, address feeAddress) {
         SETTINGS.ADMIN_ADDRESS = admin;
+        // TODO: Are we happy with these fees?
         SETTINGS.BASE_FEE = 5;
         SETTINGS.MAX_BASE_FEE = 30; // max base fee percentage
         SETTINGS.ETH_CREATION_FEE = 1e18;
