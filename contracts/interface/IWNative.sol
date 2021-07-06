@@ -2,9 +2,12 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.4;
 
-interface IWBNB {
+/**
+ * A Wrapped token interface for native EVM tokens
+ */
+interface IWNative {
     function deposit() external payable;
     function transfer(address to, uint256 value) external returns (bool);
     function withdraw(uint256) external;

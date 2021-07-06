@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract WBNB is ERC20 {
-    constructor() ERC20("Wrapped BNB", "WBNB") {
+contract WNativeMock is ERC20 {
+    constructor() ERC20("Wrapped Native Mock", "WNATIVE") {
         _mint(msg.sender, 2e3 ether);
     }
 

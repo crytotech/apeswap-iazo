@@ -33,7 +33,7 @@ contract IAZOTokenTimelock {
     mapping(address => uint256[]) locksForToken; // map erc20 address to lock id for that token
   }
     // flag to verify that this is a token lock contract
-    bool public isTokenTimelock = true;
+    bool public isIAZOTokenTimelock = true;
     // timestamp when token release is enabled
     uint256 public releaseTime;
     // beneficiary of tokens after they are released
@@ -41,7 +41,8 @@ contract IAZOTokenTimelock {
 
     mapping(address => bool) public revoked;
 
-    event TokenReleased(address indexed token, uint256 amount);
+    event Deposit(IERC20 indexed token, uint256 amount);
+    event TokenReleased(IERC20 indexed token, uint256 amount);
     event BeneficiaryAdded(address indexed newBeneficiary);
     event Revoked(address token);
 
@@ -51,7 +52,6 @@ contract IAZOTokenTimelock {
         uint256 releaseTime_,
         bool revocable_
     ) {
-        // TODO: min lock period? 
         admins.add(admin_);
         beneficiaries.add(beneficiary_);
         
@@ -76,6 +76,11 @@ contract IAZOTokenTimelock {
         _;
     }
 
+    function deposit(IERC20 _token, uint256 _amount) external {
+        _token.safeTransferFrom(msg.sender, address(this), _amount);
+        emit Deposit(_token, _amount);
+    }
+
     /**
      * @notice Transfers tokens held by timelock to beneficiary.
      */
@@ -89,7 +94,7 @@ contract IAZOTokenTimelock {
         require(amount > 0, "TokenTimelock: no tokens to release");
 
         _token.safeTransfer(msg.sender, amount);
-        emit TokenReleased(address(_token), amount);
+        emit TokenReleased(_token, amount);
     }
 
     /**

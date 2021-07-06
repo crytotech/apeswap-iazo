@@ -8,7 +8,7 @@
     This contract creates the lock on behalf of each IAZO. This contract will be whitelisted to bypass the flat rate 
     ETH fee. Please do not use the below locking code in your own contracts as the lock will fail without the ETH fee
 */
-pragma solidity ^0.8.4;
+pragma solidity 0.8.4;
 
 /*
  * ApeSwapFinance 
@@ -20,12 +20,12 @@ pragma solidity ^0.8.4;
  * GitHub:          https://github.com/ApeSwapFinance
  */
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IAZOExposer.sol";
 import "./IAZOTokenTimelock.sol";
-import "./interface/ERC20.sol";
 
 interface IApeFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
@@ -83,7 +83,6 @@ interface IApePair {
     function initialize(address, address) external;
 }
 
-// FIXME: Not using any Ownable functions
 // TODO: Store contracts deployed from this contract
 contract IAZOLiquidityLocker is Ownable {
     using SafeERC20 for IERC20;
@@ -92,24 +91,36 @@ contract IAZOLiquidityLocker is Ownable {
     IApeFactory public APE_FACTORY;
     // Flag to determine contract type 
     bool public isIAZOLiquidityLocker = true;
+
+    event IAZOLiquidityLocked(
+        address indexed iazo, 
+        IAZOTokenTimelock indexed iazoTokenlockContract, 
+        address indexed pairAddress, 
+        uint256 totalLPTokensMinted
+    );
+    event EmergencySweepWithdraw(
+        address indexed receiver, 
+        IERC20 indexed token, 
+        uint256 balance
+    );
+
+
     
     constructor(address iazoExposer, address apeFactory) {
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
     }
 
-    // TODO: Rename anything that references PRESALE
     /**
-        Send in _token0 as the PRESALE token, _token1 as the BASE token (usually WETH) for the check to work. As anyone can create a pair,
-        and send WETH to it while a presale is running, but no one should have access to the presale token. If they do and they send it to 
+        As anyone can create a pair, and send WETH to it while a IAZO is running, but no one should have access to the IAZO token. If they do and they send it to 
         the pair, scewing the initial liquidity, this function will return true
     */
-    function apePairIsInitialised(address _token0, address _token1) public view returns (bool) {
-        address pairAddress = APE_FACTORY.getPair(_token0, _token1);
+    function apePairIsInitialised(address _iazoToken, address _baseToken) public view returns (bool) {
+        address pairAddress = APE_FACTORY.getPair(_iazoToken, _baseToken);
         if (pairAddress == address(0)) {
             return false;
         }
-        uint256 balance = ERC20(_token0).balanceOf(pairAddress);
+        uint256 balance = IERC20(_iazoToken).balanceOf(pairAddress);
         if (balance > 0) {
             return true;
         }
@@ -117,8 +128,8 @@ contract IAZOLiquidityLocker is Ownable {
     }
     
     function lockLiquidity(
-        ERC20 _baseToken, 
-        ERC20 _saleToken, 
+        IERC20 _baseToken, 
+        IERC20 _saleToken, 
         uint256 _baseAmount, 
         uint256 _saleAmount, 
         uint256 _unlock_date, 
@@ -126,6 +137,8 @@ contract IAZOLiquidityLocker is Ownable {
         address _admin
     ) external returns (address) {
         require(IAZO_EXPOSER.IAZOIsRegistered(msg.sender), 'IAZO NOT REGISTERED');
+        require(_unlock_date <= 9999999999, 'unlock time is too large');
+
         address pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
         IERC20 pair = IERC20(pairAddress);
         if (pairAddress == address(0)) {
@@ -133,30 +146,29 @@ contract IAZOLiquidityLocker is Ownable {
             pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
         }
         
-        _baseToken.transferFrom(msg.sender, pairAddress, _baseAmount);
-        _saleToken.transferFrom(msg.sender, pairAddress, _saleAmount);
+        _baseToken.safeTransferFrom(msg.sender, pairAddress, _baseAmount);
+        _saleToken.safeTransferFrom(msg.sender, pairAddress, _saleAmount);
 
         IApePair(pairAddress).mint(address(this));
         uint256 totalLPTokensMinted = IApePair(pairAddress).balanceOf(address(this));
         require(totalLPTokensMinted != 0 , "LP creation failed");
 
-        uint256 unlock_date = _unlock_date > 9999999999 ? 9999999999 : _unlock_date;
-        // Maybe use a separate factory so that it can be easily upgraded and used for other purposes?
         // TODO: Instead of passing an admin address we can pass the settings contract so that it can reference a dynamic admin
-        IAZOTokenTimelock tokenTimelock = new IAZOTokenTimelock(_admin, _withdrawer, unlock_date, true);
+        IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(_admin, _withdrawer, _unlock_date, true);
+        iazoTokenTimelock.deposit(pair, totalLPTokensMinted);
         // TODO: Log the location of the lock
-        // TODO: Will tokens get locked in this contract if these fail?
-        require(tokenTimelock.isTokenTimelock(), 'new TokenTimelock has failed');
-        // TODO: Use a deposit function instead to verify that it was transferred in?
-        pair.safeTransfer(address(tokenTimelock), totalLPTokensMinted);
-        // TODO: emit
+        emit IAZOLiquidityLocked(msg.sender, iazoTokenTimelock, pairAddress, totalLPTokensMinted);
+
         return address(pair);
+    }
 
-
-        // FIXME: Will remove with vesting contract
-        // pair.approve(address(UNISWAP_LOCKER), totalLPTokensMinted);
-        // uint256 unlock_date = _unlock_date > 9999999999 ? 9999999999 : _unlock_date;
-        // UNISWAP_LOCKER.lockLPToken(pairAddress, totalLPTokensMinted, unlock_date, payable(0), true, _withdrawer);
+    /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
+    ///   Tokens are sent to owner
+    /// @param token The address of the ERC20 token to sweep
+    function sweepToken(IERC20 token) external onlyOwner {
+        uint256 balance = token.balanceOf(address(this));
+        token.safeTransfer(msg.sender, balance);
+        emit EmergencySweepWithdraw(msg.sender, token, balance);
     }
     
 }

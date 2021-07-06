@@ -2,7 +2,7 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.4;
 
 /*
  * ApeSwapFinance 
@@ -16,7 +16,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/ERC20.sol";
-import "./interface/IWBNB.sol";
+import "./interface/IWNative.sol";
 import "./interface/IIAZOSettings.sol";
 import "./interface/IIAZOLiquidityLocker.sol";
 
@@ -41,8 +41,8 @@ contract IAZO {
         address payable IAZO_OWNER; //IAZO_OWNER address
         ERC20 IAZO_TOKEN; // token offered for IAZO
         ERC20 BASE_TOKEN; // token to buy IAZO_TOKEN
-        bool IAZO_SALE_IN_BNB; // IAZO sale in bnb or BEP20.
-        uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or BNB)
+        bool IAZO_SALE_IN_NATIVE; // IAZO sale in NATIVE or ERC20.
+        uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or NATIVE)
         uint256 AMOUNT; // amount of IAZO_TOKENS for sale
         uint256 HARDCAP; // hardcap of earnings.
         uint256 SOFTCAP; // softcap for earning. if not reached IAZO is cancelled 
@@ -87,7 +87,7 @@ contract IAZO {
     // contracts
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
-    IWBNB WBNB;
+    IWNative WNATIVE;
     /// @dev reference variable
     address public IAZO_FACTORY;
     // addresses
@@ -97,11 +97,11 @@ contract IAZO {
     mapping(address => BuyerInfo) public BUYERS;
 
 
-    constructor(address _IAZOSettings, address _IAZOLiquidityLocker, IWBNB _wbnb) {
+    constructor(address _IAZOSettings, address _IAZOLiquidityLocker, IWNative _wnative) {
         IAZO_FACTORY = msg.sender;
         IAZO_SETTINGS = IIAZOSettings(_IAZOSettings);
         IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_IAZOLiquidityLocker);
-        WBNB = _wbnb;
+        WNATIVE = _wnative;
     }
 
     /// @notice Modifier: Only allow admin address to call certain functions
@@ -134,11 +134,10 @@ contract IAZO {
         uint256 _liquidityPercent,
         uint256 _listingRate
     ) external onlyIAZOFactory {
-        // TODO: IAZO owner? 
         IAZO_INFO.IAZO_OWNER = _iazoOwner; // User which created the IAZO
         IAZO_INFO.IAZO_TOKEN = _iazoToken; // Token for sale 
         IAZO_INFO.BASE_TOKEN = _baseToken; // Token used to buy IAZO token
-        IAZO_INFO.IAZO_SALE_IN_BNB = address(_baseToken) == address(WBNB) ? true : false;
+        IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_baseToken) == address(WNATIVE) ? true : false;
         IAZO_INFO.TOKEN_PRICE = _tokenPrice; // Price of time in base currency
         IAZO_INFO.AMOUNT = _amount; // Amount of tokens for sale // TODO: The amount and hardcap feel like the same number
         IAZO_INFO.HARDCAP = _hardcap; // Hardcap number of tokens for sale
@@ -182,12 +181,12 @@ contract IAZO {
     }
 
     function userDepositNative () external payable {
-        require(IAZO_INFO.IAZO_SALE_IN_BNB, "not a native token IAZO");
+        require(IAZO_INFO.IAZO_SALE_IN_NATIVE, "not a native token IAZO");
         userDepositPrivate(msg.value);
     }
 
     function userDeposit (uint256 _amount) external {
-        require(!IAZO_INFO.IAZO_SALE_IN_BNB, "cannot deposit tokens in a native token sale");
+        require(!IAZO_INFO.IAZO_SALE_IN_NATIVE, "cannot deposit tokens in a native token sale");
         userDepositPrivate(_amount);
     }
 
@@ -196,7 +195,7 @@ contract IAZO {
         require(getIAZOState() == 1, 'IAZO not active');
         BuyerInfo storage buyer = BUYERS[msg.sender];
 
-        uint256 amount_in = IAZO_INFO.IAZO_SALE_IN_BNB ? msg.value : _amount;
+        uint256 amount_in = IAZO_INFO.IAZO_SALE_IN_NATIVE ? msg.value : _amount;
         uint256 allowance = IAZO_INFO.MAX_SPEND_PER_BUYER - buyer.deposited;
         uint256 remaining = IAZO_INFO.HARDCAP - STATUS.TOTAL_BASE_COLLECTED;
         allowance = allowance > remaining ? remaining : allowance;
@@ -214,12 +213,12 @@ contract IAZO {
         STATUS.TOTAL_BASE_COLLECTED += amount_in;
         STATUS.TOTAL_TOKENS_SOLD += tokensSold;
         
-        // return unused BNB
-        if (IAZO_INFO.IAZO_SALE_IN_BNB && amount_in < msg.value) {
+        // return unused NATIVE tokens
+        if (IAZO_INFO.IAZO_SALE_IN_NATIVE && amount_in < msg.value) {
             payable(msg.sender).transfer(msg.value - amount_in);
         }
-        // deduct non BNB token from user
-        if (!IAZO_INFO.IAZO_SALE_IN_BNB) {
+        // deduct non NATIVE token from user
+        if (!IAZO_INFO.IAZO_SALE_IN_NATIVE) {
             IAZO_INFO.BASE_TOKEN.safeTransferFrom(msg.sender, address(this), amount_in);
         }
     }
@@ -259,17 +258,25 @@ contract IAZO {
         STATUS.TOTAL_BASE_WITHDRAWN += buyer.deposited;
         buyer.deposited = 0;
         
-        if(IAZO_INFO.IAZO_SALE_IN_BNB){
+        if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
             payable(msg.sender).transfer(buyer.deposited);
         } else {
             IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, buyer.deposited);
         }
     }
 
+    /**
+     * onlyAdmin functions
+     */
+
     function forceFailAdmin() external onlyAdmin {
         STATUS.FORCE_FAILED = true;
         emit ForceFailed(msg.sender);
     }
+
+    /**
+     * onlyIAZOOwner functions
+     */
 
     // Change start and end of IAZO
     function updateStart(uint256 _startBlock, uint256 _activeBlocks) external onlyIAZOOwner {
@@ -291,7 +298,7 @@ contract IAZO {
     }
 
     // TODO: Review function
-    //final step when iazo is successfull. lock liquidity and enable withdrawals of sale token.
+    // final step when iazo is successfull. lock liquidity and enable withdrawals of sale token.
     function addLiquidity() external {      
         require(!STATUS.LP_GENERATION_COMPLETE, 'GENERATION COMPLETE');
         uint256 currentIAZOState = getIAZOState();
@@ -311,9 +318,9 @@ contract IAZO {
         // base token liquidity
         uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 100;
         
-        // deposit BNB to recieve WBNB tokens
-        if (IAZO_INFO.IAZO_SALE_IN_BNB) {
-            WBNB.deposit{value : baseLiquidity}();
+        // deposit NATIVE to recieve WNATIVE tokens
+        if (IAZO_INFO.IAZO_SALE_IN_NATIVE) {
+            WNATIVE.deposit{value : baseLiquidity}();
         }
 
         IAZO_INFO.BASE_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), baseLiquidity);
@@ -336,7 +343,7 @@ contract IAZO {
 
         if(!FEE_INFO.PREPAID_FEE)
         {
-            if(IAZO_INFO.IAZO_SALE_IN_BNB){
+            if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
                 FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
             } else { 
                 IAZO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
@@ -356,9 +363,9 @@ contract IAZO {
         }
         
         // send remaining base tokens to iazo owner
-        uint256 remainingBaseBalance = IAZO_INFO.IAZO_SALE_IN_BNB ? address(this).balance : IAZO_INFO.BASE_TOKEN.balanceOf(address(this));
+        uint256 remainingBaseBalance = IAZO_INFO.IAZO_SALE_IN_NATIVE ? address(this).balance : IAZO_INFO.BASE_TOKEN.balanceOf(address(this));
         
-        if(IAZO_INFO.IAZO_SALE_IN_BNB){
+        if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
             IAZO_INFO.IAZO_OWNER.transfer(remainingBaseBalance);
         } else {
             IAZO_INFO.BASE_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, remainingBaseBalance);
