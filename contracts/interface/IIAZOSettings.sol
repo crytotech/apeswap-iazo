@@ -23,6 +23,8 @@ interface IIAZOSettings {
 
     function getAdminAddress() external view returns (address);
 
+    function isAdmin(address toCheck) external view returns (bool);
+
     function getMaxIAZOLength() external view returns (uint256);
 
     function getMinIAZOLength() external view returns (uint256);

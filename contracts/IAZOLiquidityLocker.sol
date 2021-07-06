@@ -83,13 +83,15 @@ interface IApePair {
     function initialize(address, address) external;
 }
 
-// FIXME: Can't be ownable if deployed by another contract
+// FIXME: Not using any Ownable functions
 // TODO: Store contracts deployed from this contract
 contract IAZOLiquidityLocker is Ownable {
     using SafeERC20 for IERC20;
 
     IAZOExposer public IAZO_EXPOSER;
     IApeFactory public APE_FACTORY;
+    // Flag to determine contract type 
+    bool public isIAZOLiquidityLocker = true;
     
     constructor(address iazoExposer, address apeFactory) {
         IAZO_EXPOSER = IAZOExposer(iazoExposer);

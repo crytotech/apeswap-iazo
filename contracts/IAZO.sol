@@ -19,6 +19,8 @@ import "./interface/ERC20.sol";
 import "./interface/IWBNB.sol";
 import "./interface/IIAZOSettings.sol";
 import "./interface/IIAZOLiquidityLocker.sol";
+
+
 // TODO: Add sweep token functionality 
 
 /**
@@ -76,14 +78,6 @@ contract IAZO {
         bool PREPAID_FEE;
         uint256 BASE_FEE; // divided by 100
     }
-    
-    enum IAZOState{ 
-        QUEUED, 
-        ACTIVE, 
-        SUCCESS, 
-        HARDCAP_MET, 
-        FAILED 
-    }
 
     // structs
     IAZOInfo public IAZO_INFO;
@@ -103,11 +97,11 @@ contract IAZO {
     mapping(address => BuyerInfo) public BUYERS;
 
 
-    constructor(address _IAZOSettings, address _IAZOLiquidityLocker, address _wbnb) {
+    constructor(address _IAZOSettings, address _IAZOLiquidityLocker, IWBNB _wbnb) {
         IAZO_FACTORY = msg.sender;
         IAZO_SETTINGS = IIAZOSettings(_IAZOSettings);
         IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_IAZOLiquidityLocker);
-        WBNB = IWBNB(_wbnb);
+        WBNB = _wbnb;
     }
 
     /// @notice Modifier: Only allow admin address to call certain functions
@@ -138,24 +132,20 @@ contract IAZO {
         uint256 _softcap,
         uint256 _maxSpendPerBuyer,
         uint256 _liquidityPercent,
-        // TODO: What is _listingRate vs _tokenPrice?
         uint256 _listingRate
     ) external onlyIAZOFactory {
-        // TODO: Add require statement to verify tokens are not the same or address(0)
-        IAZO_INFO.IAZO_OWNER = _iazoOwner;
-        IAZO_INFO.IAZO_TOKEN = _iazoToken;
-        IAZO_INFO.BASE_TOKEN = _baseToken;
-        // TODO: Passing WBNB address for BNB IAZO? 
+        // TODO: IAZO owner? 
+        IAZO_INFO.IAZO_OWNER = _iazoOwner; // User which created the IAZO
+        IAZO_INFO.IAZO_TOKEN = _iazoToken; // Token for sale 
+        IAZO_INFO.BASE_TOKEN = _baseToken; // Token used to buy IAZO token
         IAZO_INFO.IAZO_SALE_IN_BNB = address(_baseToken) == address(WBNB) ? true : false;
-        // NOTE: Price of token in the base currency? 
-        IAZO_INFO.TOKEN_PRICE = _tokenPrice;
-        // TODO: Amount?
-        IAZO_INFO.AMOUNT = _amount;
-        IAZO_INFO.HARDCAP = _hardcap;
-        IAZO_INFO.SOFTCAP = _softcap;
-        IAZO_INFO.MAX_SPEND_PER_BUYER = _maxSpendPerBuyer;
-        IAZO_INFO.LIQUIDITY_PERCENT = _liquidityPercent;
-        IAZO_INFO.LISTING_PRICE = _listingRate;
+        IAZO_INFO.TOKEN_PRICE = _tokenPrice; // Price of time in base currency
+        IAZO_INFO.AMOUNT = _amount; // Amount of tokens for sale // TODO: The amount and hardcap feel like the same number
+        IAZO_INFO.HARDCAP = _hardcap; // Hardcap number of tokens for sale
+        IAZO_INFO.SOFTCAP = _softcap; // Minimum amount of tokens to sell for successful IAZO
+        IAZO_INFO.MAX_SPEND_PER_BUYER = _maxSpendPerBuyer; // Max amount of base tokens that can be used to purchase IAZO token per account
+        IAZO_INFO.LIQUIDITY_PERCENT = _liquidityPercent; // Percentage of liquidity to lock after IAZO
+        IAZO_INFO.LISTING_PRICE = _listingRate; // The rate to be listed for liquidity
     }
 
     function initializeIAZO2(
@@ -176,21 +166,19 @@ contract IAZO {
         FEE_INFO.BASE_FEE = _baseFee;
     }
 
-    function getIAZOState() public view returns (IAZOState) {
-        // 5 FAILED - force fail
-        if (STATUS.FORCE_FAILED) return IAZOState.FAILED; 
+    function getIAZOState() public view returns (uint256) {
+        // 4 FAILED - force fail
+        if (STATUS.FORCE_FAILED) return 4; 
         // 4 FAILED - softcap not met by end block
-        if ((block.number > IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED < IAZO_INFO.SOFTCAP)) return IAZOState.FAILED; 
+        if ((block.number > IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED < IAZO_INFO.SOFTCAP)) return 4; 
         // 3 SUCCESS - hardcap met
-        if (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.HARDCAP) return IAZOState.HARDCAP_MET; 
-        // TODO: Do we need to wait until the liquidity is created?
+        if (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.HARDCAP) return 3; 
         // 2 SUCCESS - endblock and soft cap reached
-        // TODO: Use a timestamp?
-        if ((block.number > IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.SOFTCAP)) return IAZOState.SUCCESS; 
+        if ((block.number > IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.SOFTCAP)) return 2; 
         // 1 ACTIVE - deposits enabled
-        if ((block.number >= IAZO_TIME_INFO.START_BLOCK) && (block.number <= IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS)) return IAZOState.ACTIVE; 
+        if ((block.number >= IAZO_TIME_INFO.START_BLOCK) && (block.number <= IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS)) return 1; 
         // 0 QUEUED - awaiting start block
-        return IAZOState.QUEUED; 
+        return 0; 
     }
 
     function userDepositNative () external payable {
@@ -203,10 +191,9 @@ contract IAZO {
         userDepositPrivate(_amount);
     }
 
-
-    // TODO: It is risky to make a function payable when sometimes it takes tokens. Users could send BNB along with their token deposit 
     function userDepositPrivate (uint256 _amount) private {
-        require(getIAZOState() == IAZOState.ACTIVE, 'IAZO not active');
+        // Check that IAZO is in the ACTIVE state for user deposits
+        require(getIAZOState() == 1, 'IAZO not active');
         BuyerInfo storage buyer = BUYERS[msg.sender];
 
         uint256 amount_in = IAZO_INFO.IAZO_SALE_IN_BNB ? msg.value : _amount;
@@ -239,22 +226,20 @@ contract IAZO {
 
     /// @notice The function users call to withdraw funds
     function userWithdraw() external {
-        IAZOState currentIAZOState = getIAZOState();
-        // TODO: Combine HARDCAP_MET and SUCCESS?
+        uint256 currentIAZOState = getIAZOState();
         require(
-            currentIAZOState == IAZOState.SUCCESS || 
-            currentIAZOState == IAZOState.HARDCAP_MET || 
-            currentIAZOState == IAZOState.FAILED, 
+            currentIAZOState == 2 || // SUCCESS
+            currentIAZOState == 3 || // HARD_CAP_MET
+            currentIAZOState == 4,   // FAILED 
             'Invalid IAZO state withdraw'
         );
        
-       // TODO: Can user funds be removed?
        // Failed
-       if(currentIAZOState == IAZOState.FAILED){ 
+       if(currentIAZOState == 4) { 
            userWithdrawFailedPrivate();
        }
-        // Success
-       if(currentIAZOState == IAZOState.SUCCESS || currentIAZOState == IAZOState.HARDCAP_MET){ 
+        // Success / hardcap met
+       if(currentIAZOState == 2 || currentIAZOState == 3) { 
            userWithdrawSuccessPrivate();
        }
     }
@@ -309,8 +294,9 @@ contract IAZO {
     //final step when iazo is successfull. lock liquidity and enable withdrawals of sale token.
     function addLiquidity() external {      
         require(!STATUS.LP_GENERATION_COMPLETE, 'GENERATION COMPLETE');
-        IAZOState currentIAZOState = getIAZOState();
-        require(currentIAZOState == IAZOState.SUCCESS || currentIAZOState == IAZOState.HARDCAP_MET, 'IAZO failed or still in progress'); // SUCCESS
+        uint256 currentIAZOState = getIAZOState();
+        // Check if IAZO SUCCESS or HARDCAT met
+        require(currentIAZOState == 2 || currentIAZOState == 3, 'IAZO failed or still in progress'); // SUCCESS
 
         // FIXME: IF pair is initalized and has tokens in it before it gets here this will short circuit 
         // FIXME: If this is going to be open to the public, we need to evaluate if tokens will get locked in the contract
@@ -337,7 +323,6 @@ contract IAZO {
         IAZO_INFO.IAZO_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), saleTokenLiquidity);
 
         // TODO: Pass IAZO settings address for access control?
-        // TODO: Save token lock contract in this contract
         address newTokenLockContract = IAZO_LIQUIDITY_LOCKER.lockLiquidity(
             IAZO_INFO.BASE_TOKEN, 
             IAZO_INFO.IAZO_TOKEN, 

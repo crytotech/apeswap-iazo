@@ -3,7 +3,6 @@
 //apeswap.finance
 
 // FIXME: Review defiyield audit to avoid low risk bugs
-// TODO: Add in media links
 // TODO: Add sweep token functionality to unlock messed up IAZOs?
 // TODO: Make upgradeable
 
@@ -23,23 +22,20 @@ import "./interface/ERC20.sol";
 import "./interface/IIAZOSettings.sol";
 import "./IAZO.sol";
 
-interface IIAZOLiquidityLocker {
-    function isLiquidityLocker() external returns (bool);
-}
-
 interface IIAZO_EXPOSER {
     function initializeExposer(address iazoFactory) external;
     function registerIAZO(address newIAZO) external;
 }
 
-// TODO: Contract exceed recommended size. Need to make it smaller
 contract IAZOFactory {
     IIAZO_EXPOSER public IAZO_EXPOSER;
-    IIAZOSettings public IAZO_SETTINGS; // TODO: function to update settings contract?
-    IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER; // TODO: function to update liquidity locker contract?
-    address public WBNB;
+    IIAZOSettings public IAZO_SETTINGS;
+    IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
+    IWBNB public WBNB;
 
     bool public isIAZOFactory = true;
+
+    event IAZOCreated(address indexed newIAZO);
 
     struct IAZOParams {
         uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or BNB)
@@ -60,9 +56,8 @@ contract IAZOFactory {
         IAZO_SETTINGS = iazoSettings;
         require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
         IAZO_LIQUIDITY_LOCKER = iazoliquidityLocker;
-        require(IAZO_LIQUIDITY_LOCKER.isLiquidityLocker(), 'isLiquidityLocker call returns false');
-        // TODO: verify wbnb?
-        WBNB = wbnb;
+        require(IAZO_LIQUIDITY_LOCKER.isIAZOLiquidityLocker(), 'isIAZOLiquidityLocker call returns false');
+        WBNB = IWBNB(wbnb);
     }
 
     // Create new IAZO and add address to IAZOExposer.
@@ -74,6 +69,7 @@ contract IAZOFactory {
         bool _burnRemains,
         uint256[9] memory uint_params
     ) public payable {
+        require(address(_baseToken) != address(0), "Base token cannot be address(0)");
         IAZOParams memory params;
         params.TOKEN_PRICE = uint_params[0];
         params.AMOUNT = uint_params[1];
@@ -115,18 +111,16 @@ contract IAZOFactory {
             "Exceeds max iazo length"
         );
 
-        // TODO: add this value to settings?
+        /// @notice require(params.AMOUNT > tokenDecimals) was removed below in place of this check
         require(params.AMOUNT >= 10000, "Minimum divisibility");
         require(params.TOKEN_PRICE > 0, "Invalid token price");
-        // TODO: add this value to settings?
+        /// @dev Adjust liquidity percentage settings here
         require(
             params.LIQUIDITY_PERCENT >= 30 && params.LIQUIDITY_PERCENT <= 100,
             "Liquidity percentage too low"
         ); // 30% minimum liquidity lock
 
         uint256 tokenDecimals = _IAZOToken.decimals();
-        // FIXME: removing as tokenDecimals will never be over 18 and we already check above for greater than 1000
-        // require(params.AMOUNT > tokenDecimals);
         uint256 hardcap = params.AMOUNT * params.TOKEN_PRICE / (10 ** tokenDecimals);
         // Check that the hardcap is greater than or equal to softcap
         require(hardcap >= params.SOFTCAP, 'softcap is greater than hardcap');
@@ -141,7 +135,7 @@ contract IAZOFactory {
         );
 
         // Deploy a new IAZO contract
-        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER), address(WBNB));
+        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER), WBNB);
         
         newIAZO.initializeIAZO(
             _IAZOOwner,
@@ -171,7 +165,7 @@ contract IAZOFactory {
         // NOTE: Moved this to the bottom so tokens don't get locked here
         _IAZOToken.transferFrom(address(msg.sender), address(newIAZO), tokensRequired);
 
-        // TODO: emit Event
+        emit IAZOCreated(address(newIAZO));
     }
 
     // FIXME: _tokenPrice

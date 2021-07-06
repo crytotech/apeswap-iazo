@@ -2,9 +2,7 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-// TODO: Do we need an indexOf function
 // TODO: sweepTokenLib
-
 
 pragma solidity ^0.8.4;
 
@@ -27,9 +25,11 @@ interface IIAZOFactory {
 contract IAZOExposer {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    address public IAZO_FACTORY;
+
     EnumerableSet.AddressSet private IAZOs;
 
-    address public IAZO_FACTORY;
+    mapping(address => uint256) public IAZOAddressToIndex;
 
     bool public isIAZOExposer = true;
 
@@ -47,9 +47,12 @@ contract IAZOExposer {
     function registerIAZO(address _iazoAddress) external {
         require(initialized, "not initialized");
         require(msg.sender == IAZO_FACTORY, "Forbidden");
-        IAZOs.add(_iazoAddress);
-        // TODO: Which contract is this supposed to be?
-        emit IAZORegistered(_iazoAddress);
+        uint256 currentIndex = IAZOsLength();
+        bool didAdd = IAZOs.add(_iazoAddress);
+        if(didAdd) {
+            IAZOAddressToIndex[_iazoAddress] = currentIndex;
+            emit IAZORegistered(_iazoAddress);
+        }
     }
 
     function IAZOIsRegistered(address _iazoAddress)
@@ -64,7 +67,7 @@ contract IAZOExposer {
         return IAZOs.at(_index);
     }
 
-    function IAZOsLength() external view returns (uint256) {
+    function IAZOsLength() public view returns (uint256) {
         return IAZOs.length();
     }
 }
