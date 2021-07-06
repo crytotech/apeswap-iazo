@@ -171,5 +171,4 @@ contract IAZOLiquidityLocker is Ownable {
         token.safeTransfer(msg.sender, balance);
         emit EmergencySweepWithdraw(msg.sender, token, balance);
     }
-    
 }
