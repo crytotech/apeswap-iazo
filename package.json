@@ -1,7 +1,7 @@
 {
-    "name": "ilo",
+    "name": "iazo",
     "version": "1.0.0",
-    "description": "\"# ILO\"",
+    "description": "\"# IAZO\"",
     "main": "truffle-config.js",
     "directories": {
         "example": "example",
@@ -9,24 +9,28 @@
     },
     "scripts": {
         "test": "truffle test",
-        "compile": "truffle compile"
+        "compile": "truffle compile",
+        "migrate:dev": "truffle migrate --network development",
+        "size": "truffle run contract-size"
     },
     "devDependencies": {
+        "@openzeppelin/contracts": "^4.1.0",
+        "bignumber.js": "^9.0.1",
         "chai": "^4.3.4",
         "chai-bignumber": "^3.0.0",
         "truffle": "^5.3.12",
-        "@openzeppelin/contracts": "^4.1.0",
-        "bignumber.js": "^9.0.1",
-        "truffle-assertions": "^0.9.2"
+        "truffle-assertions": "^0.9.2",
+        "truffle-plugin-verify": "^0.5.11",
+        "truffle-contract-size": "^2.0.1"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/Doublo54/ILO.git"
+        "url": "git+https://github.com/ApeSwapFinance/apeswap-iazo.git"
     },
     "author": "",
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/Doublo54/ILO/issues"
+        "url": "https://github.com/ApeSwapFinance/apeswap-iazo/issues"
     },
-    "homepage": "https://github.com/Doublo54/ILO#readme"
+    "homepage": "https://github.com/ApeSwapFinance/apeswap-iazo#readme"
 }

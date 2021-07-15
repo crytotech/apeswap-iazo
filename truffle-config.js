@@ -18,11 +18,11 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+ const HDWalletProvider = require('@truffle/hdwallet-provider');
+ require('dotenv').config();
+ 
+ const MAINNET_DEPLOYER_KEY = process.env.MAINNET_DEPLOYER_KEY;
+ const TESTNET_DEPLOYER_KEY = process.env.TESTNET_DEPLOYER_KEY;
 
 module.exports = {
   /**
@@ -46,6 +46,21 @@ module.exports = {
       host: "127.0.0.1",     // Localhost (default: none)
       port: 8545,           // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
+      gas: 50000000
+    },
+    bsc: {
+      provider: () => new HDWalletProvider(MAINNET_DEPLOYER_KEY, `https://bsc-dataseed1.binance.org`),
+      network_id: 56,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: false
+    },
+    "bsc-testnet": {
+      provider: () => new HDWalletProvider(TESTNET_DEPLOYER_KEY, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      network_id: 97,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
     },
     // Another network with more advanced options...
     // advanced: {
@@ -78,7 +93,17 @@ module.exports = {
   mocha: {
     // timeout: 100000
   },
-
+  plugins: [
+    'truffle-plugin-verify',
+    'truffle-contract-size'
+  ],
+  api_keys: {
+    etherscan: process.env.ETHERSCAN_API_KEY,
+    bscscan: process.env.BSCSCAN_API_KEY,
+    hecoinfo: process.env.HECOINFO_API_KEY,
+    ftmscan: process.env.FTMSCAN_API_KEY,
+    polygonscan: process.env.POLYGONSCAN_API_KEY,
+  },
   // Configure your compilers
   compilers: {
     solc: {
