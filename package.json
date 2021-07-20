@@ -11,7 +11,7 @@
         "test": "truffle test",
         "compile": "truffle compile",
         "migrate:dev": "truffle migrate --network development",
-        "size": "truffle run contract-size"
+        "size": "yarn compile && truffle run contract-size"
     },
     "devDependencies": {
         "@openzeppelin/contracts": "^4.1.0",

@@ -4,7 +4,7 @@
 
 import "./ERC20.sol";
 
-pragma solidity 0.8.4;
+pragma solidity 0.8.6;
 
 interface IIAZOLiquidityLocker {
     function APE_FACTORY() external view returns (address);

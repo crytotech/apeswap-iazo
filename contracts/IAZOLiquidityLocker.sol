@@ -8,7 +8,7 @@
     This contract creates the lock on behalf of each IAZO. This contract will be whitelisted to bypass the flat rate 
     ETH fee. Please do not use the below locking code in your own contracts as the lock will fail without the ETH fee
 */
-pragma solidity 0.8.4;
+pragma solidity 0.8.6;
 
 /*
  * ApeSwapFinance 

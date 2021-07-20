@@ -2,7 +2,7 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-pragma solidity 0.8.4;
+pragma solidity 0.8.6;
 
 /*
  * ApeSwapFinance 
@@ -36,12 +36,14 @@ contract IAZOExposer is Ownable {
     bool private initialized = false;
 
     event IAZORegistered(address indexed presaleContract);
+    event LogInit();
 
     function initializeExposer(address iazoFactory) external {
         require(!initialized, "already initialized");
         require(IIAZOFactory(iazoFactory).isIAZOFactory(), "address does not have isIAZOFactory flag");
         IAZO_FACTORY = iazoFactory;
         initialized = true;
+        emit LogInit();
     }
 
     function registerIAZO(address _iazoAddress) external {

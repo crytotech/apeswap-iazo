@@ -6,7 +6,7 @@
 // TODO: Add sweep token functionality to unlock messed up IAZOs?
 // TODO: Make upgradeable
 
-pragma solidity 0.8.4;
+pragma solidity 0.8.6;
 
 /*
  * ApeSwapFinance 
@@ -50,7 +50,12 @@ contract IAZOFactory {
         uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
     }
 
-    constructor(IIAZO_EXPOSER iazoExposer, IIAZOSettings iazoSettings, IIAZOLiquidityLocker iazoliquidityLocker, IWNative wnative) {
+    constructor(
+        IIAZO_EXPOSER iazoExposer, 
+        IIAZOSettings iazoSettings, 
+        IIAZOLiquidityLocker iazoliquidityLocker, 
+        IWNative wnative
+    ) {
         IAZO_EXPOSER = iazoExposer;
         IAZO_EXPOSER.initializeExposer(address(this));
         IAZO_SETTINGS = iazoSettings;
@@ -171,14 +176,25 @@ contract IAZOFactory {
     }
 
     // FIXME: _tokenPrice
-    function getTokensRequired (uint256 _amount, uint256 _tokenPrice, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _hardcap, uint256 _decimals) internal pure returns (uint256) {
+    function getTokensRequired (
+        uint256 _amount, 
+        uint256 _tokenPrice, 
+        uint256 _listingPrice, 
+        uint256 _liquidityPercent, 
+        uint256 _hardcap, 
+        uint256 _decimals
+    ) internal pure returns (uint256) {
+        // // TODO: _listingRate?
         // uint256 listingRatePercent = _listingRate * 1000 / _tokenPrice;
+        // // FIXME: _tokenFee not being used
         // uint256 fee = _amount * _tokenFee / 1000;
         // uint256 amountMinusFee = _amount - fee;
         // uint256 liquidityRequired = amountMinusFee * _liquidityPercent * listingRatePercent / 1000000;
         // uint256 tokensRequiredForPresale = _amount + liquidityRequired + fee;
         // return tokensRequiredForPresale;
 
+        // TODO: This assumes that there is enough liquidity to cover the hardcap
+        // NOTE: If we get this far then at least the softcap value will be possible 
         uint256 liquidityRequired = _hardcap * _liquidityPercent * (10 ** _decimals) / 100 / _listingPrice;
         require(liquidityRequired > 0, "Something wrong with liquidity values");
         uint256 tokensRequired = _amount + liquidityRequired;
