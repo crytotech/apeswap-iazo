@@ -21,13 +21,14 @@ pragma solidity 0.8.6;
 import "./interface/ERC20.sol";
 import "./interface/IIAZOSettings.sol";
 import "./IAZO.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
 
 interface IIAZO_EXPOSER {
     function initializeExposer(address iazoFactory) external;
     function registerIAZO(address newIAZO) external;
 }
 
-contract IAZOFactory {
+contract IAZOFactory is Initializable {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
@@ -50,12 +51,12 @@ contract IAZOFactory {
         uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
     }
 
-    constructor(
+    function initialize(
         IIAZO_EXPOSER iazoExposer, 
         IIAZOSettings iazoSettings, 
         IIAZOLiquidityLocker iazoliquidityLocker, 
         IWNative wnative
-    ) {
+    ) external initializer {
         IAZO_EXPOSER = iazoExposer;
         IAZO_EXPOSER.initializeExposer(address(this));
         IAZO_SETTINGS = iazoSettings;
