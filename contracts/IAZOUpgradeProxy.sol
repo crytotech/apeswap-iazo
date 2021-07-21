@@ -1,3 +1,7 @@
+//SPDX-License-Identifier: UNLICENSED
+//ALL RIGHTS RESERVED
+//apeswap.finance
+
 pragma solidity 0.8.6;
 
 /*
@@ -12,7 +16,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract IFOUpgradeProxy is TransparentUpgradeableProxy {
+contract IAZOUpgradeProxy is TransparentUpgradeableProxy {
     constructor(
         address admin,
         address logic,

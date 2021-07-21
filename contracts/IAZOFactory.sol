@@ -134,7 +134,6 @@ contract IAZOFactory {
 
         uint256 tokensRequired = getTokensRequired(
             params.AMOUNT,
-            params.TOKEN_PRICE,
             params.LISTING_PRICE, 
             params.LIQUIDITY_PERCENT,
             hardcap,
@@ -175,26 +174,13 @@ contract IAZOFactory {
         emit IAZOCreated(address(newIAZO));
     }
 
-    // FIXME: _tokenPrice
     function getTokensRequired (
         uint256 _amount, 
-        uint256 _tokenPrice, 
         uint256 _listingPrice, 
         uint256 _liquidityPercent, 
         uint256 _hardcap, 
         uint256 _decimals
     ) internal pure returns (uint256) {
-        // // TODO: _listingRate?
-        // uint256 listingRatePercent = _listingRate * 1000 / _tokenPrice;
-        // // FIXME: _tokenFee not being used
-        // uint256 fee = _amount * _tokenFee / 1000;
-        // uint256 amountMinusFee = _amount - fee;
-        // uint256 liquidityRequired = amountMinusFee * _liquidityPercent * listingRatePercent / 1000000;
-        // uint256 tokensRequiredForPresale = _amount + liquidityRequired + fee;
-        // return tokensRequiredForPresale;
-
-        // TODO: This assumes that there is enough liquidity to cover the hardcap
-        // NOTE: If we get this far then at least the softcap value will be possible 
         uint256 liquidityRequired = _hardcap * _liquidityPercent * (10 ** _decimals) / 100 / _listingPrice;
         require(liquidityRequired > 0, "Something wrong with liquidity values");
         uint256 tokensRequired = _amount + liquidityRequired;
