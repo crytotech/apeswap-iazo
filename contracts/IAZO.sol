@@ -15,6 +15,7 @@ pragma solidity 0.8.6;
  */
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
 import "./interface/ERC20.sol";
 import "./interface/IWNative.sol";
 import "./interface/IIAZOSettings.sol";
@@ -27,7 +28,7 @@ import "./interface/IIAZOLiquidityLocker.sol";
  *  Welcome to the "Initial Ape Zone Offering" (IAZO) contract
  */
 
-contract IAZO {
+contract IAZO is Initializable {
     using SafeERC20 for ERC20;
 
     event ForceFailed(address indexed by);
@@ -96,12 +97,46 @@ contract IAZO {
     // BuyerInfo mapping
     mapping(address => BuyerInfo) public BUYERS;
 
-
-    constructor(address _IAZOSettings, address _IAZOLiquidityLocker, IWNative _wnative) {
+    function initializeOld(address _IAZOSettings, address _IAZOLiquidityLocker, IWNative _wnative) external initializer {
         IAZO_FACTORY = msg.sender;
         IAZO_SETTINGS = IIAZOSettings(_IAZOSettings);
         IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_IAZOLiquidityLocker);
         WNATIVE = _wnative;
+    }
+
+    // _addresses = [IAZOSettings, IAZOLiquidityLocker]
+    // _addressesPayable = [IAZOOwner, feeAddress]
+    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingRate, _startBlock, _activeBlocks, _lockPeriod, _baseFee]
+    // _bools = [_prepaidFee, _burnRemains]
+    // _ERC20s = [_iazoToken, _baseToken]
+    function initialize(address[] memory _addresses, address payable[] memory _addressesPayable, uint256[] memory _uint256s, bool[] memory _bools, ERC20[] memory _ERC20s, IWNative _wnative) external initializer {
+        IAZO_FACTORY = msg.sender;
+        WNATIVE = _wnative;
+
+        IAZO_SETTINGS = IIAZOSettings(_addresses[0]);
+        IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_addresses[1]);
+
+        IAZO_INFO.IAZO_OWNER = _addressesPayable[0]; // User which created the IAZO
+        FEE_INFO.FEE_ADDRESS = _addressesPayable[1];
+
+        IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_ERC20s[1]) == address(WNATIVE) ? true : false;
+        IAZO_INFO.TOKEN_PRICE = _uint256s[0]; // Price of time in base currency
+        IAZO_INFO.AMOUNT = _uint256s[1]; // Amount of tokens for sale // TODO: The amount and hardcap feel like the same number
+        IAZO_INFO.HARDCAP = _uint256s[2]; // Hardcap number of tokens for sale
+        IAZO_INFO.SOFTCAP = _uint256s[3]; // Minimum amount of tokens to sell for successful IAZO
+        IAZO_INFO.MAX_SPEND_PER_BUYER = _uint256s[4]; // Max amount of base tokens that can be used to purchase IAZO token per account
+        IAZO_INFO.LIQUIDITY_PERCENT = _uint256s[5]; // Percentage of liquidity to lock after IAZO
+        IAZO_INFO.LISTING_PRICE = _uint256s[6]; // The rate to be listed for liquidity
+        IAZO_TIME_INFO.START_BLOCK = _uint256s[7];
+        IAZO_TIME_INFO.ACTIVE_BLOCKS = _uint256s[8];
+        IAZO_TIME_INFO.LOCK_PERIOD = _uint256s[9];
+        FEE_INFO.BASE_FEE = _uint256s[10];
+
+        IAZO_INFO.BURN_REMAINS = _bools[0];
+        FEE_INFO.PREPAID_FEE = _bools[1];
+
+        IAZO_INFO.IAZO_TOKEN = _ERC20s[0]; // Token for sale 
+        IAZO_INFO.BASE_TOKEN = _ERC20s[1]; // Token used to buy IAZO token
     }
 
     /// @notice Modifier: Only allow admin address to call certain functions
@@ -120,49 +155,6 @@ contract IAZO {
     modifier onlyIAZOFactory() {
         require(msg.sender == IAZO_FACTORY, "IAZO_FACTORY only");
         _;
-    }
-
-    function initializeIAZO(
-        address payable _iazoOwner,
-        ERC20 _iazoToken,
-        ERC20 _baseToken,
-        uint256 _tokenPrice, 
-        uint256 _amount,
-        uint256 _hardcap, 
-        uint256 _softcap,
-        uint256 _maxSpendPerBuyer,
-        uint256 _liquidityPercent,
-        uint256 _listingRate
-    ) external onlyIAZOFactory {
-        IAZO_INFO.IAZO_OWNER = _iazoOwner; // User which created the IAZO
-        IAZO_INFO.IAZO_TOKEN = _iazoToken; // Token for sale 
-        IAZO_INFO.BASE_TOKEN = _baseToken; // Token used to buy IAZO token
-        IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_baseToken) == address(WNATIVE) ? true : false;
-        IAZO_INFO.TOKEN_PRICE = _tokenPrice; // Price of time in base currency
-        IAZO_INFO.AMOUNT = _amount; // Amount of tokens for sale // TODO: The amount and hardcap feel like the same number
-        IAZO_INFO.HARDCAP = _hardcap; // Hardcap number of tokens for sale
-        IAZO_INFO.SOFTCAP = _softcap; // Minimum amount of tokens to sell for successful IAZO
-        IAZO_INFO.MAX_SPEND_PER_BUYER = _maxSpendPerBuyer; // Max amount of base tokens that can be used to purchase IAZO token per account
-        IAZO_INFO.LIQUIDITY_PERCENT = _liquidityPercent; // Percentage of liquidity to lock after IAZO
-        IAZO_INFO.LISTING_PRICE = _listingRate; // The rate to be listed for liquidity
-    }
-
-    function initializeIAZO2(
-        uint256 _startBlock,
-        uint256 _activeBlocks,
-        uint256 _lockPeriod,
-        bool _prepaidFee,
-        bool _burnRemains,
-        address payable _feeAddress,
-        uint256 _baseFee
-    ) external onlyIAZOFactory {
-        IAZO_TIME_INFO.START_BLOCK = _startBlock;
-        IAZO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
-        IAZO_TIME_INFO.LOCK_PERIOD = _lockPeriod;
-        IAZO_INFO.BURN_REMAINS = _burnRemains;
-        FEE_INFO.PREPAID_FEE = _prepaidFee;
-        FEE_INFO.FEE_ADDRESS = _feeAddress;
-        FEE_INFO.BASE_FEE = _baseFee;
     }
 
     function getIAZOState() public view returns (uint256) {

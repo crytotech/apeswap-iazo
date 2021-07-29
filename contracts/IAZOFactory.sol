@@ -18,21 +18,30 @@ pragma solidity 0.8.6;
  * GitHub:          https://github.com/ApeSwapFinance
  */
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IAZOUpgradeProxy.sol";
+
 import "./interface/ERC20.sol";
 import "./interface/IIAZOSettings.sol";
-import "./IAZO.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
+import "./interface/IIAZOLiquidityLocker.sol";
+import "./interface/IWNative.sol";
+
 
 interface IIAZO_EXPOSER {
     function initializeExposer(address iazoFactory) external;
     function registerIAZO(address newIAZO) external;
 }
 
-contract IAZOFactory is Initializable {
+contract IAZOFactory is Initializable, Ownable {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
     IWNative public WNATIVE;
+
+    bytes public abiEncodeData;
+    address public proxyAdmin;
+    address public IAZOAddress;
 
     bool public isIAZOFactory = true;
 
@@ -142,30 +151,15 @@ contract IAZOFactory is Initializable {
         );
 
         // Deploy a new IAZO contract
-        IAZO newIAZO = new IAZO(address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER), WNATIVE);
-        
-        newIAZO.initializeIAZO(
-            _IAZOOwner,
-            _IAZOToken,
-            _baseToken,
-            params.TOKEN_PRICE,
-            params.AMOUNT,
-            hardcap,
-            params.SOFTCAP,
-            params.MAX_SPEND_PER_BUYER,
-            params.LIQUIDITY_PERCENT,
-            params.LISTING_PRICE
-        );
+        address[2] memory _addresses = [address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER)];
+        address payable[2] memory _addressesPayable = [_IAZOOwner, IAZO_SETTINGS.getFeeAddress()];
+        uint256[10] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, hardcap, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.START_BLOCK, params.ACTIVE_BLOCKS, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee()];
+        bool[2] memory _bools = [_prepaidFee, _burnRemains];
+        ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
+        //IWNative = WNATIVE;
+        //TODO store the arrays above in the abi.
 
-        newIAZO.initializeIAZO2(
-            params.START_BLOCK,
-            params.ACTIVE_BLOCKS,
-            params.LOCK_PERIOD,
-            _prepaidFee,
-            _burnRemains,
-            IAZO_SETTINGS.getFeeAddress(),
-            IAZO_SETTINGS.getBaseFee()
-        );
+        IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(proxyAdmin, IAZOAddress, abiEncodeData);
 
         IAZO_EXPOSER.registerIAZO(address(newIAZO));
 
@@ -186,5 +180,17 @@ contract IAZOFactory is Initializable {
         require(liquidityRequired > 0, "Something wrong with liquidity values");
         uint256 tokensRequired = _amount + liquidityRequired;
         return tokensRequired;
+    }
+
+    function changeProxyAdmin(address _admin) public onlyOwner {
+        proxyAdmin = _admin;
+    }
+
+    function changeIAZOAddress(address _iazo) public onlyOwner {
+        IAZOAddress = _iazo;
+    }
+
+    function changeABI(bytes memory _abi) public onlyOwner {
+        abiEncodeData = _abi;
     }
 }

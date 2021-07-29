@@ -1,6 +1,7 @@
 const IAZOFactory = artifacts.require("IAZOFactory");
 const IAZOSettings = artifacts.require("IAZOSettings");
 const IAZOExposer = artifacts.require("IAZOExposer");
+const IAZO = artifacts.require("IAZO");
 const IAZOLiquidityLocker = artifacts.require("IAZOLiquidityLocker");
 const IAZOUpgradeProxy = artifacts.require("IAZOUpgradeProxy");
 const { getNetworkConfig } = require("../deploy-config");
@@ -13,6 +14,9 @@ const { getNetworkConfig } = require("../deploy-config");
 
 module.exports = async function (deployer, network, accounts) {
   const { adminAddress, proxyAdmin, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
+  
+  await deployer.deploy(IAZO);
+  
   await deployer.deploy(IAZOExposer);
   IAZOExposer.transferOwnership(adminAddress);
 
