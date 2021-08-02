@@ -37,7 +37,7 @@ contract IAZOSettings {
 
     Settings public SETTINGS;
 
-    bool public isIAZOSettings = true;
+    bool constant public isIAZOSettings = true;
     
     constructor(address admin, address feeAddress) {
         SETTINGS.ADMIN_ADDRESS = admin;

@@ -100,7 +100,7 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         address indexed pairAddress, 
         uint256 totalLPTokensMinted
     );
-    event EmergencySweepWithdraw(
+    event SweepWithdraw(
         address indexed receiver, 
         IERC20 indexed token, 
         uint256 balance
@@ -169,6 +169,6 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
     function sweepToken(IERC20 token) external onlyOwner {
         uint256 balance = token.balanceOf(address(this));
         token.safeTransfer(msg.sender, balance);
-        emit EmergencySweepWithdraw(msg.sender, token, balance);
+        emit SweepWithdraw(msg.sender, token, balance);
     }
 }

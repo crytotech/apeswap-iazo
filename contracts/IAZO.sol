@@ -80,6 +80,8 @@ contract IAZO is Initializable {
         uint256 BASE_FEE; // divided by 100
     }
 
+    bool constant public isIAZO = true;
+
     // structs
     IAZOInfo public IAZO_INFO;
     IAZOTimeInfo public IAZO_TIME_INFO;
@@ -97,6 +99,7 @@ contract IAZO is Initializable {
     // BuyerInfo mapping
     mapping(address => BuyerInfo) public BUYERS;
 
+    // TODO: old function?
     function initializeOld(address _IAZOSettings, address _IAZOLiquidityLocker, IWNative _wnative) external initializer {
         IAZO_FACTORY = msg.sender;
         IAZO_SETTINGS = IIAZOSettings(_IAZOSettings);
@@ -106,10 +109,17 @@ contract IAZO is Initializable {
 
     // _addresses = [IAZOSettings, IAZOLiquidityLocker]
     // _addressesPayable = [IAZOOwner, feeAddress]
-    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingRate, _startBlock, _activeBlocks, _lockPeriod, _baseFee]
+    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startBlock, _activeBlocks, _lockPeriod, _baseFee]
     // _bools = [_prepaidFee, _burnRemains]
     // _ERC20s = [_iazoToken, _baseToken]
-    function initialize(address[] memory _addresses, address payable[] memory _addressesPayable, uint256[] memory _uint256s, bool[] memory _bools, ERC20[] memory _ERC20s, IWNative _wnative) external initializer {
+    function initialize(
+        address[2] memory _addresses, 
+        address payable[2] memory _addressesPayable, 
+        uint256[11] memory _uint256s, 
+        bool[2] memory _bools, 
+        ERC20[2] memory _ERC20s, 
+        IWNative _wnative
+    ) external initializer {
         IAZO_FACTORY = msg.sender;
         WNATIVE = _wnative;
 

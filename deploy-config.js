@@ -27,7 +27,7 @@ function getNetworkConfig(network, accounts) {
         console.log(`Deploying with development config.`)
         return {
             adminAddress: '0xC9F40d1c8a84b8AeD12A241e7b99682Fb7A3FE84',
-            proxyAdmin: '',
+            proxyAdmin: '0xC9F40d1c8a84b8AeD12A241e7b99682Fb7A3FE84',
             feeAddress: '0xC9F40d1c8a84b8AeD12A241e7b99682Fb7A3FE84',
             wNative: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd',
             apeFactory: '0x152349604d49c2Af10ADeE94b918b051104a143E',
