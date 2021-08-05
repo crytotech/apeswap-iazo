@@ -18,10 +18,6 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IIAZOFactory {
-    function isIAZOFactory() external returns (bool);
-}
-
 contract IAZOExposer is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -40,7 +36,6 @@ contract IAZOExposer is Ownable {
 
     function initializeExposer(address iazoFactory) external {
         require(!initialized, "already initialized");
-        require(IIAZOFactory(iazoFactory).isIAZOFactory(), "address does not have isIAZOFactory flag");
         IAZO_FACTORY = iazoFactory;
         initialized = true;
         emit LogInit();

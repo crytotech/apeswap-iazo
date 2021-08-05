@@ -24,6 +24,8 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
+
 import "./IAZOExposer.sol";
 import "./IAZOTokenTimelock.sol";
 
@@ -84,7 +86,7 @@ interface IApePair {
 }
 
 // TODO: Store contracts deployed from this contract
-contract IAZOLiquidityLocker is Ownable {
+contract IAZOLiquidityLocker is Ownable, Initializable {
     using SafeERC20 for IERC20;
 
     IAZOExposer public IAZO_EXPOSER;
@@ -98,15 +100,13 @@ contract IAZOLiquidityLocker is Ownable {
         address indexed pairAddress, 
         uint256 totalLPTokensMinted
     );
-    event EmergencySweepWithdraw(
+    event SweepWithdraw(
         address indexed receiver, 
         IERC20 indexed token, 
         uint256 balance
     );
 
-
-    
-    constructor(address iazoExposer, address apeFactory) {
+    function initialize (address iazoExposer, address apeFactory) external initializer {
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
     }
@@ -169,6 +169,6 @@ contract IAZOLiquidityLocker is Ownable {
     function sweepToken(IERC20 token) external onlyOwner {
         uint256 balance = token.balanceOf(address(this));
         token.safeTransfer(msg.sender, balance);
-        emit EmergencySweepWithdraw(msg.sender, token, balance);
+        emit SweepWithdraw(msg.sender, token, balance);
     }
 }
