@@ -130,10 +130,10 @@ contract IAZOFactory is Initializable, Ownable {
         // Lock period must be greater than the min lock period
         require(params.LOCK_PERIOD >= IAZO_SETTINGS.getMinLockPeriod(), 'Lock period too low');
 
-        // Charge ETH fee for contract creation
+        // Charge native coin fee for contract creation
         if(_prepaidFee){
             require(
-                msg.value >= IAZO_SETTINGS.getEthCreationFee(),
+                msg.value >= IAZO_SETTINGS.getNativeCreationFee(),
                 "Fee not met"
             );
             /// @notice the entire funds sent in the tx will be taken as long as it's above the ethCreationFee
@@ -214,7 +214,6 @@ contract IAZOFactory is Initializable, Ownable {
         uint256 previousVersion = IAZOVersion;
         IAZOVersion = _newIAZOVersion;
         emit UpdateIAZOVersion(previousVersion, IAZOVersion);
-
     }
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 

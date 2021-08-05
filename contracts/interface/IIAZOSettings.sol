@@ -13,7 +13,7 @@ interface IIAZOSettings {
             address FEE_ADDRESS,
             uint256 BASE_FEE,
             uint256 MAX_BASE_FEE,
-            uint256 ETH_CREATION_FEE,
+            uint256 NATIVE_CREATION_FEE,
             uint256 MIN_IAZO_LENGTH,
             uint256 MAX_IAZO_LENGTH,
             uint256 MIN_LOCK_PERIOD
@@ -33,21 +33,26 @@ interface IIAZOSettings {
 
     function getMaxBaseFee() external view returns (uint256);
 
-    function getEthCreationFee() external view returns (uint256);
+    function getNativeCreationFee() external view returns (uint256);
 
     function getMinLockPeriod() external view returns (uint256);
 
     function getFeeAddress() external view returns (address payable);
 
+    function getBurnAddress() external view returns (address);
+
     function setAdminAddress(address _address) external;
 
     function setFeeAddresses(address _address) external;
 
-    function setFees(uint256 _baseFee, uint256 _ethCreationFee) external;
+    function setFees(uint256 _baseFee, uint256 _nativeCreationFee) external;
 
     function setMaxIAZOLength(uint256 _maxLength) external;
 
     function setMinIAZOLength(uint256 _minLength) external;
 
     function setMinLockPeriod(uint256 _minLockPeriod) external;
+
+    function setBurnAddress(address _burnAddress) external;
+
 }

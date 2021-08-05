@@ -15,14 +15,13 @@ pragma solidity 0.8.6;
  */
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "./interface/ERC20.sol";
 import "./interface/IWNative.sol";
 import "./interface/IIAZOSettings.sol";
 import "./interface/IIAZOLiquidityLocker.sol";
 
-
-// TODO: Add sweep token functionality 
 
 /**
  *  Welcome to the "Initial Ape Zone Offering" (IAZO) contract
@@ -36,7 +35,11 @@ contract IAZO is Initializable {
     event BaseFeeCollected(address indexed feeAddress, uint256 baseFeeCollected);
     event UpdateIAZOBlocks(uint256 previousStartBlock, uint256 newStartBlock, uint256 previousActiveBlocks, uint256 newActiveBlocks);
     event AddLiquidity(uint256 baseLiquidity, uint256 saleTokenLiquidity, uint256 remainingBaseBalance);
-
+    event SweepWithdraw(
+        address indexed receiver, 
+        IERC20 indexed token, 
+        uint256 balance
+    );
 
     struct IAZOInfo {
         address payable IAZO_OWNER; //IAZO_OWNER address
@@ -94,18 +97,9 @@ contract IAZO is Initializable {
     /// @dev reference variable
     address public IAZO_FACTORY;
     // addresses
-    address public BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     address public TOKEN_LOCK_ADDRESS = 0x0000000000000000000000000000000000000000;
     // BuyerInfo mapping
     mapping(address => BuyerInfo) public BUYERS;
-
-    // TODO: old function?
-    function initializeOld(address _IAZOSettings, address _IAZOLiquidityLocker, IWNative _wnative) external initializer {
-        IAZO_FACTORY = msg.sender;
-        IAZO_SETTINGS = IIAZOSettings(_IAZOSettings);
-        IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_IAZOLiquidityLocker);
-        WNATIVE = _wnative;
-    }
 
     // _addresses = [IAZOSettings, IAZOLiquidityLocker]
     // _addressesPayable = [IAZOOwner, feeAddress]
@@ -131,9 +125,9 @@ contract IAZO is Initializable {
 
         IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_ERC20s[1]) == address(WNATIVE) ? true : false;
         IAZO_INFO.TOKEN_PRICE = _uint256s[0]; // Price of time in base currency
-        IAZO_INFO.AMOUNT = _uint256s[1]; // Amount of tokens for sale // TODO: The amount and hardcap feel like the same number
-        IAZO_INFO.HARDCAP = _uint256s[2]; // Hardcap number of tokens for sale
-        IAZO_INFO.SOFTCAP = _uint256s[3]; // Minimum amount of tokens to sell for successful IAZO
+        IAZO_INFO.AMOUNT = _uint256s[1]; // Amount of tokens for sale
+        IAZO_INFO.HARDCAP = _uint256s[2]; // Hardcap base token to collect (TOKEN_PRICE * AMOUNT)
+        IAZO_INFO.SOFTCAP = _uint256s[3]; // Minimum amount of base tokens to collect for succesfull IAZO
         IAZO_INFO.MAX_SPEND_PER_BUYER = _uint256s[4]; // Max amount of base tokens that can be used to purchase IAZO token per account
         IAZO_INFO.LIQUIDITY_PERCENT = _uint256s[5]; // Percentage of liquidity to lock after IAZO
         IAZO_INFO.LISTING_PRICE = _uint256s[6]; // The rate to be listed for liquidity
@@ -142,8 +136,8 @@ contract IAZO is Initializable {
         IAZO_TIME_INFO.LOCK_PERIOD = _uint256s[9];
         FEE_INFO.BASE_FEE = _uint256s[10];
 
-        IAZO_INFO.BURN_REMAINS = _bools[0];
-        FEE_INFO.PREPAID_FEE = _bools[1];
+        IAZO_INFO.BURN_REMAINS = _bools[0]; // Burn remainder of IAZO tokens not sold
+        FEE_INFO.PREPAID_FEE = _bools[1]; // Fee paid by IAZO creator beforehand
 
         IAZO_INFO.IAZO_TOKEN = _ERC20s[0]; // Token for sale 
         IAZO_INFO.BASE_TOKEN = _ERC20s[1]; // Token used to buy IAZO token
@@ -358,7 +352,7 @@ contract IAZO is Initializable {
         if (remainingIAZOTokenBalance > STATUS.TOTAL_TOKENS_SOLD) {
             uint256 amountLeft = remainingIAZOTokenBalance - STATUS.TOTAL_TOKENS_SOLD;
             if(IAZO_INFO.BURN_REMAINS){
-                IAZO_INFO.IAZO_TOKEN.safeTransfer(BURN_ADDRESS, amountLeft);
+                IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_SETTINGS.getBurnAddress(), amountLeft);
             } else {
                 IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, amountLeft);
             }
@@ -375,5 +369,14 @@ contract IAZO is Initializable {
         
         STATUS.LP_GENERATION_COMPLETE = true;
         emit AddLiquidity(baseLiquidity, saleTokenLiquidity, remainingBaseBalance);
+    }
+
+    /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
+    ///   Tokens are sent to owner
+    /// @param token The address of the ERC20 token to sweep
+    function sweepToken(IERC20 token) external onlyAdmin {
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(msg.sender, balance);
+        emit SweepWithdraw(msg.sender, token, balance);
     }
 }
