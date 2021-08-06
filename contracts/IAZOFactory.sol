@@ -54,8 +54,6 @@ contract IAZOFactory is Initializable, Ownable {
     IWNative public WNATIVE;
 
     bytes public abiEncodeData;
-    // FIXME: remove proxyAdmin?
-    // address public proxyAdmin;
     IIAZO[] public IAZOImplementations;
     uint256 public IAZOVersion = 0;
 
@@ -90,17 +88,14 @@ contract IAZOFactory is Initializable, Ownable {
         IIAZO iazoInitialImplementation,
         IWNative wnative
     ) external initializer {
-        // FIXME: cc
-        // require(iazoInitialImplementation.isIAZO(), 'implementation does not appear to be IAZO');
+        require(iazoInitialImplementation.isIAZO(), 'implementation does not appear to be IAZO');
         IAZOImplementations.push(iazoInitialImplementation);
         IAZO_EXPOSER = iazoExposer;
         IAZO_EXPOSER.initializeExposer(address(this));
         IAZO_SETTINGS = iazoSettings;
-        // FIXME: cc
-        // require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
+        require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
         IAZO_LIQUIDITY_LOCKER = iazoliquidityLocker;
-        // FIXME: cc
-        // require(IAZO_LIQUIDITY_LOCKER.isIAZOLiquidityLocker(), 'isIAZOLiquidityLocker call returns false');
+        require(IAZO_LIQUIDITY_LOCKER.isIAZOLiquidityLocker(), 'isIAZOLiquidityLocker call returns false');
         WNATIVE = wnative;
     }
 
@@ -185,8 +180,6 @@ contract IAZOFactory is Initializable, Ownable {
         uint256[11] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, hardcap, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_BLOCK, params.ACTIVE_BLOCKS, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee()];
         bool[2] memory _bools = [_prepaidFee, _burnRemains];
         ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
-        // FIXME: Remove proxyAdmin
-        // IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(proxyAdmin, IAZOImplementations[IAZOVersion], '');
         // Deploy proxy contract and set implementation to current IAZO version 
         IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(address(0), address(IAZOImplementations[IAZOVersion]), '');
         IIAZO(address(newIAZO)).initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, WNATIVE);
@@ -223,11 +216,6 @@ contract IAZOFactory is Initializable, Ownable {
         emit UpdateIAZOVersion(previousVersion, IAZOVersion);
 
     }
-
-    // FIXME: Should probably remove this because we don't want control over the proxy contracts
-    // function changeProxyAdmin(address _admin) public onlyOwner {
-    //     proxyAdmin = _admin;
-    // }    
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
     ///   Tokens are sent to owner
