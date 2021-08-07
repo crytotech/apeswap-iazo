@@ -14,6 +14,8 @@ pragma solidity ^0.8.3;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import "./interface/IIAZOSettings.sol";
+
 /**
  * @dev A token holder contract that will allow a beneficiary to extract the
  * tokens after a given release time.
@@ -25,13 +27,14 @@ contract IAZOTokenTimelock {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    EnumerableSet.AddressSet private admins;
     EnumerableSet.AddressSet private beneficiaries;
 
   struct UserInfo {
     EnumerableSet.AddressSet lockedTokens; // records all tokens the user has locked
     mapping(address => uint256[]) locksForToken; // map erc20 address to lock id for that token
   }
+    IIAZOSettings public IAZO_SETTINGS;
+
     // flag to verify that this is a token lock contract
     bool public isIAZOTokenTimelock = true;
     // timestamp when token release is enabled
@@ -47,12 +50,12 @@ contract IAZOTokenTimelock {
     event Revoked(address token);
 
     constructor(
-        address admin_,
+        IIAZOSettings settings_,
         address beneficiary_,
         uint256 releaseTime_,
         bool revocable_
     ) {
-        admins.add(admin_);
+        IAZO_SETTINGS = settings_;
         beneficiaries.add(beneficiary_);
         
         releaseTime = releaseTime_;
@@ -62,7 +65,7 @@ contract IAZOTokenTimelock {
 
     modifier onlyAdmin {
         require(
-            admins.contains(msg.sender),
+            msg.sender == IAZO_SETTINGS.getAdminAddress(),
             "DOES_NOT_HAVE_ADMIN_ROLE"
         );
         _;

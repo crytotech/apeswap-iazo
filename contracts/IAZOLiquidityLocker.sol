@@ -28,6 +28,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./IAZOExposer.sol";
 import "./IAZOTokenTimelock.sol";
+import "./interface/IIAZOSettings.sol";
 
 interface IApeFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
@@ -91,6 +92,8 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
 
     IAZOExposer public IAZO_EXPOSER;
     IApeFactory public APE_FACTORY;
+    IIAZOSettings public IAZO_SETTINGS;
+
     // Flag to determine contract type 
     bool public isIAZOLiquidityLocker = true;
 
@@ -106,9 +109,10 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         uint256 balance
     );
 
-    function initialize (address iazoExposer, address apeFactory) external initializer {
+    function initialize (address iazoExposer, address apeFactory, address iazoSettings) external initializer {
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
+        IAZO_SETTINGS = IIAZOSettings(iazoSettings);
     }
 
     /**
@@ -133,8 +137,8 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         uint256 _baseAmount, 
         uint256 _saleAmount, 
         uint256 _unlock_date, 
-        address payable _withdrawer, 
-        address _admin
+        address payable _withdrawer,
+        address _iazoAddress
     ) external returns (address) {
         // Must be from a registered IAZO contract
         require(IAZO_EXPOSER.IAZOIsRegistered(msg.sender), 'IAZO NOT REGISTERED');
@@ -154,10 +158,10 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         require(totalLPTokensMinted != 0 , "LP creation failed");
 
         // TODO: Instead of passing an admin address we can pass the settings contract so that it can reference a dynamic admin
-        IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(_admin, _withdrawer, _unlock_date, true);
+        IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(IAZO_SETTINGS, _withdrawer, _unlock_date, true);
         IApePair(pairAddress).approve(address(iazoTokenTimelock), totalLPTokensMinted);
         iazoTokenTimelock.deposit(pair, totalLPTokensMinted);
-        // TODO: Log the location of the lock
+        IAZO_EXPOSER.addTokenTimelock(_iazoAddress, iazoTokenTimelock);
         emit IAZOLiquidityLocked(msg.sender, iazoTokenTimelock, pairAddress, totalLPTokensMinted);
 
         return address(pair);

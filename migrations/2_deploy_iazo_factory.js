@@ -16,10 +16,7 @@ module.exports = async function (deployer, network, accounts) {
   await iazoExposer.transferOwnership(adminAddress);
 
   await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
-  // constructor(address iazoExposer, address apeFactory) {
-  //   IAZO_EXPOSER = IAZOExposer(iazoExposer);
-  //   APE_FACTORY = IApeFactory(apeFactory);
-  // }
+
   const iazoLiquidityLocker = await deployer.deploy(IAZOLiquidityLocker);
   await iazoLiquidityLocker.transferOwnership(adminAddress);
 
@@ -35,6 +32,11 @@ module.exports = async function (deployer, network, accounts) {
           "internalType": "address",
           "name": "apeFactory",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "iazoSettings",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -44,7 +46,8 @@ module.exports = async function (deployer, network, accounts) {
     },
     [
       IAZOExposer.address,
-      apeFactory
+      apeFactory,
+      IAZOSettings.address
     ]
   );
 

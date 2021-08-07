@@ -332,8 +332,8 @@ contract IAZO is Initializable {
             baseLiquidity, 
             saleTokenLiquidity, 
             block.timestamp + IAZO_TIME_INFO.LOCK_PERIOD, 
-            IAZO_INFO.IAZO_OWNER, 
-            IAZO_SETTINGS.getAdminAddress()
+            IAZO_INFO.IAZO_OWNER,
+            address(this)
         );
         TOKEN_LOCK_ADDRESS = newTokenLockContract;
 

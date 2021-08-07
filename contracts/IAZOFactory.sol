@@ -25,7 +25,7 @@ import "./interface/IWNative.sol";
 
 
 interface IIAZO_EXPOSER {
-    function initializeExposer(address iazoFactory) external;
+    function initializeExposer(address _iazoFactory, address _liquidityLocker) external;
     function registerIAZO(address newIAZO) external;
 }
 
@@ -91,7 +91,7 @@ contract IAZOFactory is Initializable, Ownable {
         require(iazoInitialImplementation.isIAZO(), 'implementation does not appear to be IAZO');
         IAZOImplementations.push(iazoInitialImplementation);
         IAZO_EXPOSER = iazoExposer;
-        IAZO_EXPOSER.initializeExposer(address(this));
+        IAZO_EXPOSER.initializeExposer(address(this), address(iazoliquidityLocker));
         IAZO_SETTINGS = iazoSettings;
         require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
         IAZO_LIQUIDITY_LOCKER = iazoliquidityLocker;
