@@ -161,7 +161,7 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(IAZO_SETTINGS, _withdrawer, _unlock_date, true);
         IApePair(pairAddress).approve(address(iazoTokenTimelock), totalLPTokensMinted);
         iazoTokenTimelock.deposit(pair, totalLPTokensMinted);
-        IAZO_EXPOSER.addTokenTimelock(_iazoAddress, iazoTokenTimelock);
+        IAZO_EXPOSER.addTokenTimelock(_iazoAddress, address(iazoTokenTimelock));
         emit IAZOLiquidityLocked(msg.sender, iazoTokenTimelock, pairAddress, totalLPTokensMinted);
 
         return address(pair);

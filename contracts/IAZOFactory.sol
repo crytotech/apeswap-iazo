@@ -181,7 +181,7 @@ contract IAZOFactory is Initializable, Ownable {
         bool[2] memory _bools = [_prepaidFee, _burnRemains];
         ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
         // Deploy proxy contract and set implementation to current IAZO version 
-        IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(address(0), address(IAZOImplementations[IAZOVersion]), '');
+        IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(IAZO_SETTINGS.getBurnAddress(), address(IAZOImplementations[IAZOVersion]), '');
         IIAZO(address(newIAZO)).initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, WNATIVE);
         IAZO_EXPOSER.registerIAZO(address(newIAZO));
 

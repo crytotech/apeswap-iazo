@@ -1,0 +1,104 @@
+=== IAZO ===
+> Initializer check
+> deposit
+    - native
+    - ERC20
+    - amount check
+    - multiple accounts
+> withdraw
+    - failed
+        - withdraw base
+        - force fail
+        - end block reached, no softcap
+    - success
+        - amount check
+        - native
+        - ERC20
+        - endblock reached with softcap
+        - hardcap reached
+> forceFail
+> Update info
+    - start block
+    - max spend limit
+> add liquidity
+    -
+
+
+=== IAZOExposer ===
+> registerIAZO
+    - Factory Only
+> read IAZO (index, length)
+> IAZOIsRegistered
+> addTokenTimelock
+    - Liquidity locker Only
+> getTokenTImelock
+
+
+=== IAZOFactory ===
+> Proxy update implementation
+> IAZO version update & downgrade
+> createIAZO
+    - param fails
+    - prepaid and not prepaid fees
+    - burn remaind and dont burn remains
+    - tokensRequired check
+    - tokens received
+    - succesfully added IAZO to iazoExposer
+    - IAZO initializer check if it works with array variables. possible list overflow?
+
+
+=== IAZOLiquidityLocker ===
+> Proxy update implementation
+> lockLiquidity
+
+
+=== IAZOSettings ===
+> Getters functionality
+> Setters functionality
+
+
+=== IAZOTokenTimelock ===
+> deposit
+> release
+    - Only beneficiary check
+    - ReleaseTime check
+    - Revoked check
+> Does it work from liquidity locker
+
+
+
+=== FULL IAZO CHECKS ===
+
+
+=== ISSUES/MENTIONS ===
+- Factory createIAZO() first param is IAZO owner. Can just be msg.sender?
+- AddLiquidity() still has to be run manually (can't withdraw earlier)
+- One whale can just buy all the tokens
+- The setting/param values for creating an IAZO is not clear.
+    - if you want to sell 99 tokens should it be 99 or 99e18? same for the others.
+
+
+=== Console scripts ===
+exposer = await IAZOExposer.deployed();
+settings = await IAZOSettings.deployed();
+banana = await Banana.deployed();
+wnative = await WNativeMock.deployed();
+
+blocknumber = await web3.eth.getBlockNumber();
+newiazosettings = ["100000000000000000", "21000000000000000000", "1100000000000000000", blocknumber + 20, 28700, 60, "2000000000000000000000000", "30", "200000000000000000"]
+
+factory = await IAZOFactory.at();
+locker = await IAZOLiquidityLocker.at();
+
+
+{ IAZOExposer: '0xf07c6CAE45A87A9D1f99Fde37ea6167824262835',
+  IAZOSettings: '0x772016E4EAB8a5c4F71eba8Ac2aD19EA0A8D3A27',
+  IAZOLiquidityLocker: '0x49B91537CB422da5EAAc9cA280B7CC6bEda7D4a8',
+  IAZOLiquidityLockerProxy: '0x12caFD2f382436f79256abFC74799AE4e0E76Cb1',
+  IAZOFactory: '0xa724Ea0c6DE5c8cCAcEF3DeE2a4403e37801bcAf',
+  IAZOFactoryProxy: '0xF752e9dC968e6F1644DFf301cb866b3EA9188312',
+  IAZO: '0x064E0dfEdcc8C60643BBe752aF81557a61bddd03',
+  ProxyAdmin: '0xb1f8e9462161a02ad64212500d7B0F91240c319b',
+  wNative: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd' }
+
+

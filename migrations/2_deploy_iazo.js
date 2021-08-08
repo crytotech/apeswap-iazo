@@ -4,18 +4,23 @@ const IAZOExposer = artifacts.require("IAZOExposer");
 const IAZO = artifacts.require("IAZO");
 const IAZOLiquidityLocker = artifacts.require("IAZOLiquidityLocker");
 const IAZOUpgradeProxy = artifacts.require("IAZOUpgradeProxy");
+const ProxyAdminContract = artifacts.require("ProxyAdmin.sol");
+
 const { getNetworkConfig } = require("../deploy-config");
 
 
 module.exports = async function (deployer, network, accounts) {
   const { adminAddress, proxyAdmin, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
-  
+
   await deployer.deploy(IAZO);
-  
+
   const iazoExposer = await deployer.deploy(IAZOExposer);
   await iazoExposer.transferOwnership(adminAddress);
 
   await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
+
+  await deployer.deploy(ProxyAdminContract);
+  //await ProxyAdminContract.transferOwnership(proxyAdmin);
 
   const iazoLiquidityLocker = await deployer.deploy(IAZOLiquidityLocker);
   await iazoLiquidityLocker.transferOwnership(adminAddress);
@@ -51,10 +56,12 @@ module.exports = async function (deployer, network, accounts) {
     ]
   );
 
-  await deployer.deploy(IAZOUpgradeProxy, proxyAdmin, IAZOLiquidityLocker.address, abiEncodeDataLiquidityLocker);
+  await deployer.deploy(IAZOUpgradeProxy, ProxyAdminContract.address, IAZOLiquidityLocker.address, abiEncodeDataLiquidityLocker);
+  const liquidityLockerAddress = IAZOUpgradeProxy.address;
 
   // Deployment of Factory and FactoryProxy
   await deployer.deploy(IAZOFactory);
+  await iazoLiquidityLocker.transferOwnership(adminAddress);
 
   const abiEncodeDataFactory = web3.eth.abi.encodeFunctionCall(
     {
@@ -99,15 +106,19 @@ module.exports = async function (deployer, network, accounts) {
     ]
   );
 
-  await deployer.deploy(IAZOUpgradeProxy, proxyAdmin, IAZOFactory.address, abiEncodeDataFactory);
+  await deployer.deploy(IAZOUpgradeProxy, ProxyAdminContract.address, IAZOFactory.address, abiEncodeDataFactory);
+
+  const factoryAddress = IAZOUpgradeProxy.address;
 
   console.dir({
-    IAZOUpgradeProxy: IAZOUpgradeProxy.address,
-    IAZOExposer: IAZOExposer.address, 
-    IAZOSettings: IAZOSettings.address, 
-    IAZOLiquidityLocker: IAZOLiquidityLocker.address, 
-    IAZOFactoryProxy: IAZOUpgradeProxy.address,
+    IAZOExposer: IAZOExposer.address,
+    IAZOSettings: IAZOSettings.address,
+    IAZOLiquidityLocker: IAZOLiquidityLocker.address,
+    IAZOLiquidityLockerProxy: liquidityLockerAddress,
+    IAZOFactory: IAZOFactory.address,
+    IAZOFactoryProxy: factoryAddress,
     IAZO: IAZO.address,
+    ProxyAdmin: ProxyAdminContract.address,
     wNative
   });
 };
