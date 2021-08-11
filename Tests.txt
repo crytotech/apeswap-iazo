@@ -83,6 +83,7 @@ exposer = await IAZOExposer.deployed();
 settings = await IAZOSettings.deployed();
 banana = await Banana.deployed();
 wnative = await WNativeMock.deployed();
+admin = await ProxyAdmin.deployed();
 
 blocknumber = await web3.eth.getBlockNumber();
 newiazosettings = ["100000000000000000", "21000000000000000000", "1100000000000000000", blocknumber + 20, 28700, 60, "2000000000000000000000000", "30", "200000000000000000"]
@@ -91,14 +92,14 @@ factory = await IAZOFactory.at();
 locker = await IAZOLiquidityLocker.at();
 
 
-{ IAZOExposer: '0xf07c6CAE45A87A9D1f99Fde37ea6167824262835',
-  IAZOSettings: '0x772016E4EAB8a5c4F71eba8Ac2aD19EA0A8D3A27',
-  IAZOLiquidityLocker: '0x49B91537CB422da5EAAc9cA280B7CC6bEda7D4a8',
-  IAZOLiquidityLockerProxy: '0x12caFD2f382436f79256abFC74799AE4e0E76Cb1',
-  IAZOFactory: '0xa724Ea0c6DE5c8cCAcEF3DeE2a4403e37801bcAf',
-  IAZOFactoryProxy: '0xF752e9dC968e6F1644DFf301cb866b3EA9188312',
-  IAZO: '0x064E0dfEdcc8C60643BBe752aF81557a61bddd03',
-  ProxyAdmin: '0xb1f8e9462161a02ad64212500d7B0F91240c319b',
+{ IAZOExposer: '0x1064f6fa58C3504d3722e5d221bD001CA7a4592b',
+  IAZOSettings: '0xe291748F78180Ff328a80a953A41e29D2986b578',
+  IAZOLiquidityLocker: '0xb93D18327AC34aFd41bc958B8aa4B4767004a360',
+  IAZOLiquidityLockerProxy: '0x8bB80dDD81a6a6B0cc2df6a28c451DACA6c8765B',
+  IAZOFactory: '0xB5c10589756A1d474d0C48e27EC9D5bAbFE6624b',
+  IAZOFactoryProxy: '0x3b240604054C05cBDFe1116C974688D97aa9bcDD',
+  IAZO: '0x10B8F841F207AbF25806Bb979945Ba3f9c7d4aD8',
+  ProxyAdmin: '0x2814b4dF4FC0DBb30e419cEbcD31A035547EBD2A',
   wNative: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd' }
 
 

@@ -91,6 +91,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
         address admin
     ) external initializer {
         _owner = admin;
+        isIAZOFactory = true;
 
         require(iazoInitialImplementation.isIAZO(), 'implementation does not appear to be IAZO');
         IAZOImplementations.push(iazoInitialImplementation);

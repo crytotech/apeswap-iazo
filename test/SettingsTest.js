@@ -1,8 +1,8 @@
-const ILOSettings = artifacts.require("ILOSettings");
+const IAZOSettings = artifacts.require("IAZOSettings");
 
-contract("ILOSettings", accounts => {
+contract("IAZOSettings", accounts => {
     it("Should set and get base fee", async () => {
-        const settings = await ILOSettings.deployed();
+        const settings = await IAZOSettings.deployed();
         await settings.setFees(15, 15);
         const newBaseFee = await settings.getBaseFee();
         assert.equal(

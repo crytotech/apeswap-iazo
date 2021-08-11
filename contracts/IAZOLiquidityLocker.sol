@@ -108,6 +108,7 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
 
     function initialize (address iazoExposer, address apeFactory, address iazoSettings, address admin) external initializer {
         _owner = admin;
+        isIAZOLiquidityLocker = true;
 
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
