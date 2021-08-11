@@ -2,8 +2,6 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-// TODO: Make upgradeable
-
 /**
     This contract creates the lock on behalf of each IAZO. This contract will be whitelisted to bypass the flat rate 
     ETH fee. Please do not use the below locking code in your own contracts as the lock will fail without the ETH fee
@@ -23,9 +21,9 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+import "./OwnableProxy.sol";
 import "./IAZOExposer.sol";
 import "./IAZOTokenTimelock.sol";
 import "./interface/IIAZOSettings.sol";
@@ -86,8 +84,7 @@ interface IApePair {
     function initialize(address, address) external;
 }
 
-// TODO: Store contracts deployed from this contract
-contract IAZOLiquidityLocker is Ownable, Initializable {
+contract IAZOLiquidityLocker is OwnableProxy, Initializable {
     using SafeERC20 for IERC20;
 
     IAZOExposer public IAZO_EXPOSER;
@@ -109,7 +106,9 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         uint256 balance
     );
 
-    function initialize (address iazoExposer, address apeFactory, address iazoSettings) external initializer {
+    function initialize (address iazoExposer, address apeFactory, address iazoSettings, address admin) external initializer {
+        _owner = admin;
+
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
         IAZO_SETTINGS = IIAZOSettings(iazoSettings);

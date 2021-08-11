@@ -14,9 +14,10 @@ pragma solidity 0.8.6;
  * GitHub:          https://github.com/ApeSwapFinance
  */
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "./IAZOUpgradeProxy.sol";
+import "./OwnableProxy.sol";
 
 import "./interface/ERC20.sol";
 import "./interface/IIAZOSettings.sol";
@@ -47,7 +48,7 @@ interface IIAZO {
     ) external;     
 }
 
-contract IAZOFactory is Initializable, Ownable {
+contract IAZOFactory is OwnableProxy, Initializable {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
@@ -86,8 +87,11 @@ contract IAZOFactory is Initializable, Ownable {
         IIAZOSettings iazoSettings, 
         IIAZOLiquidityLocker iazoliquidityLocker, 
         IIAZO iazoInitialImplementation,
-        IWNative wnative
+        IWNative wnative,
+        address admin
     ) external initializer {
+        _owner = admin;
+
         require(iazoInitialImplementation.isIAZO(), 'implementation does not appear to be IAZO');
         IAZOImplementations.push(iazoInitialImplementation);
         IAZO_EXPOSER = iazoExposer;

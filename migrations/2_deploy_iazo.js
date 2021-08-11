@@ -10,7 +10,7 @@ const { getNetworkConfig } = require("../deploy-config");
 
 
 module.exports = async function (deployer, network, accounts) {
-  const { adminAddress, proxyAdmin, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
+  const { adminAddress, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
 
   await deployer.deploy(IAZO);
 
@@ -20,10 +20,8 @@ module.exports = async function (deployer, network, accounts) {
   await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
 
   await deployer.deploy(ProxyAdminContract);
-  //await ProxyAdminContract.transferOwnership(proxyAdmin);
 
-  const iazoLiquidityLocker = await deployer.deploy(IAZOLiquidityLocker);
-  await iazoLiquidityLocker.transferOwnership(adminAddress);
+  await deployer.deploy(IAZOLiquidityLocker);
 
   const abiEncodeDataLiquidityLocker = web3.eth.abi.encodeFunctionCall(
     {
@@ -42,6 +40,11 @@ module.exports = async function (deployer, network, accounts) {
           "internalType": "address",
           "name": "iazoSettings",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -52,7 +55,8 @@ module.exports = async function (deployer, network, accounts) {
     [
       IAZOExposer.address,
       apeFactory,
-      IAZOSettings.address
+      IAZOSettings.address,
+      adminAddress
     ]
   );
 
@@ -60,8 +64,7 @@ module.exports = async function (deployer, network, accounts) {
   const liquidityLockerAddress = IAZOUpgradeProxy.address;
 
   // Deployment of Factory and FactoryProxy
-  await deployer.deploy(IAZOFactory);
-  await iazoLiquidityLocker.transferOwnership(adminAddress);
+  const iazoFactory = await deployer.deploy(IAZOFactory);
 
   const abiEncodeDataFactory = web3.eth.abi.encodeFunctionCall(
     {
@@ -90,6 +93,11 @@ module.exports = async function (deployer, network, accounts) {
           "internalType": "contract IWNative",
           "name": "wnative",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -102,7 +110,8 @@ module.exports = async function (deployer, network, accounts) {
       IAZOSettings.address,
       IAZOLiquidityLocker.address,
       IAZO.address,
-      wNative
+      wNative,
+      adminAddress
     ]
   );
 
