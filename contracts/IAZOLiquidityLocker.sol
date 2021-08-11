@@ -157,7 +157,6 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
         uint256 totalLPTokensMinted = IApePair(pairAddress).balanceOf(address(this));
         require(totalLPTokensMinted != 0 , "LP creation failed");
 
-        // TODO: Instead of passing an admin address we can pass the settings contract so that it can reference a dynamic admin
         IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(IAZO_SETTINGS, _withdrawer, _unlock_date, true);
         IApePair(pairAddress).approve(address(iazoTokenTimelock), totalLPTokensMinted);
         iazoTokenTimelock.deposit(pair, totalLPTokensMinted);

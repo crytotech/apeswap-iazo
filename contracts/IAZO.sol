@@ -293,7 +293,7 @@ contract IAZO is Initializable {
         emit UpdateMaxSpendLimit(previousMaxSpend, IAZO_INFO.MAX_SPEND_PER_BUYER);
     }
 
-    // TODO: Review function
+    // FIXME: Function should lock liquidity before withdraws are allowed
     // final step when iazo is successfull. lock liquidity and enable withdrawals of sale token.
     function addLiquidity() external {      
         require(!STATUS.LP_GENERATION_COMPLETE, 'GENERATION COMPLETE');
@@ -301,9 +301,7 @@ contract IAZO is Initializable {
         // Check if IAZO SUCCESS or HARDCAT met
         require(currentIAZOState == 2 || currentIAZOState == 3, 'IAZO failed or still in progress'); // SUCCESS
 
-        // FIXME: IF pair is initalized and has tokens in it before it gets here this will short circuit 
-        // FIXME: If this is going to be open to the public, we need to evaluate if tokens will get locked in the contract
-        // FIXME: If this goes into FORCE_FAILED then the entire IAZO won't work 
+        // If pair for this token has already been initalized, then this will fail the IAZO
         if (IAZO_LIQUIDITY_LOCKER.apePairIsInitialised(address(IAZO_INFO.IAZO_TOKEN), address(IAZO_INFO.BASE_TOKEN))) {
             STATUS.FORCE_FAILED = true;
             return;
@@ -325,7 +323,6 @@ contract IAZO is Initializable {
         uint256 saleTokenLiquidity = baseLiquidity * (10 ** IAZO_INFO.IAZO_TOKEN.decimals()) / IAZO_INFO.LISTING_PRICE;
         IAZO_INFO.IAZO_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), saleTokenLiquidity);
 
-        // TODO: Pass IAZO settings address for access control?
         address newTokenLockContract = IAZO_LIQUIDITY_LOCKER.lockLiquidity(
             IAZO_INFO.BASE_TOKEN, 
             IAZO_INFO.IAZO_TOKEN, 

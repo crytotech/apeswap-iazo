@@ -14,7 +14,6 @@ pragma solidity 0.8.6;
  * GitHub:          https://github.com/ApeSwapFinance
  */
 
-// TODO: Add a burn address, burn fee and add a burn token
 contract IAZOSettings {
 
     struct Settings {
@@ -43,16 +42,12 @@ contract IAZOSettings {
     
     constructor(address admin, address feeAddress) {
         SETTINGS.ADMIN_ADDRESS = admin;
-        // TODO: Are we happy with these fees?
         SETTINGS.BASE_FEE = 5;
         SETTINGS.MAX_BASE_FEE = 30; // max base fee percentage
         SETTINGS.NATIVE_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(feeAddress);
-        // TODO: Update to 1 hour?
         SETTINGS.MIN_IAZO_LENGTH = 28700; // ~1 day
         SETTINGS.MAX_IAZO_LENGTH = 602700; // ~3 weeks (when 28700 blocks in 1 day) 
-        // TODO: Update min lock period?
-        // TODO: Do we need to use MIN_LOCK_PERIOD in LiquidityLocker?
         SETTINGS.MIN_LOCK_PERIOD = 28; // in days
         SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     }
