@@ -33,7 +33,7 @@ contract IAZO is Initializable {
     event ForceFailed(address indexed by);
     event UpdateMaxSpendLimit(uint256 previousMaxSpend, uint256 newMaxSpend);
     event BaseFeeCollected(address indexed feeAddress, uint256 baseFeeCollected);
-    event UpdateIAZOBlocks(uint256 previousStartBlock, uint256 newStartBlock, uint256 previousActiveBlocks, uint256 newActiveBlocks);
+    event UpdateIAZOBlocks(uint256 previousStartTime, uint256 newStartBlock, uint256 previousActiveTime, uint256 newActiveBlocks);
     event AddLiquidity(uint256 baseLiquidity, uint256 saleTokenLiquidity, uint256 remainingBaseBalance);
     event SweepWithdraw(
         address indexed receiver, 
@@ -57,8 +57,8 @@ contract IAZO is Initializable {
     }
 
     struct IAZOTimeInfo {
-        uint256 START_BLOCK; // block to start IAZO
-        uint256 ACTIVE_BLOCKS; // end of IAZO -> START_BLOCK + ACTIVE_BLOCKS
+        uint256 START_TIME; // block to start IAZO
+        uint256 ACTIVE_TIME; // end of IAZO -> block.timestamp + ACTIVE_TIME
         uint256 LOCK_PERIOD; // unix timestamp (3 weeks) to lock earned tokens for IAZO_OWNER
     }
 
@@ -80,7 +80,7 @@ contract IAZO is Initializable {
     struct FeeInfo {
         address payable FEE_ADDRESS;
         bool PREPAID_FEE;
-        uint256 BASE_FEE; // divided by 100
+        uint256 BASE_FEE; // divided by 1000
     }
 
     bool constant public isIAZO = true;
@@ -103,7 +103,7 @@ contract IAZO is Initializable {
 
     // _addresses = [IAZOSettings, IAZOLiquidityLocker]
     // _addressesPayable = [IAZOOwner, feeAddress]
-    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startBlock, _activeBlocks, _lockPeriod, _baseFee]
+    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startTime, _activeTime, _lockPeriod, _baseFee]
     // _bools = [_prepaidFee, _burnRemains]
     // _ERC20s = [_iazoToken, _baseToken]
     function initialize(
@@ -131,8 +131,8 @@ contract IAZO is Initializable {
         IAZO_INFO.MAX_SPEND_PER_BUYER = _uint256s[4]; // Max amount of base tokens that can be used to purchase IAZO token per account
         IAZO_INFO.LIQUIDITY_PERCENT = _uint256s[5]; // Percentage of liquidity to lock after IAZO
         IAZO_INFO.LISTING_PRICE = _uint256s[6]; // The rate to be listed for liquidity
-        IAZO_TIME_INFO.START_BLOCK = _uint256s[7];
-        IAZO_TIME_INFO.ACTIVE_BLOCKS = _uint256s[8];
+        IAZO_TIME_INFO.START_TIME = _uint256s[7];
+        IAZO_TIME_INFO.ACTIVE_TIME = _uint256s[8];
         IAZO_TIME_INFO.LOCK_PERIOD = _uint256s[9];
         FEE_INFO.BASE_FEE = _uint256s[10];
 
@@ -165,13 +165,13 @@ contract IAZO is Initializable {
         // 4 FAILED - force fail
         if (STATUS.FORCE_FAILED) return 4; 
         // 4 FAILED - softcap not met by end block
-        if ((block.number > IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED < IAZO_INFO.SOFTCAP)) return 4; 
+        if ((block.timestamp > IAZO_TIME_INFO.START_TIME + IAZO_TIME_INFO.ACTIVE_TIME) && (STATUS.TOTAL_BASE_COLLECTED < IAZO_INFO.SOFTCAP)) return 4; 
         // 3 SUCCESS - hardcap met
         if (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.HARDCAP) return 3; 
         // 2 SUCCESS - endblock and soft cap reached
-        if ((block.number > IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS) && (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.SOFTCAP)) return 2; 
+        if ((block.timestamp > IAZO_TIME_INFO.START_TIME + IAZO_TIME_INFO.ACTIVE_TIME) && (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.SOFTCAP)) return 2; 
         // 1 ACTIVE - deposits enabled
-        if ((block.number >= IAZO_TIME_INFO.START_BLOCK) && (block.number <= IAZO_TIME_INFO.START_BLOCK + IAZO_TIME_INFO.ACTIVE_BLOCKS)) return 1; 
+        if ((block.timestamp >= IAZO_TIME_INFO.START_TIME) && (block.timestamp <= IAZO_TIME_INFO.START_TIME + IAZO_TIME_INFO.ACTIVE_TIME)) return 1; 
         // 0 QUEUED - awaiting start block
         return 0; 
     }
@@ -275,16 +275,16 @@ contract IAZO is Initializable {
      */
 
     // Change start and end of IAZO
-    function updateStart(uint256 _startBlock, uint256 _activeBlocks) external onlyIAZOOwner {
-        require(IAZO_TIME_INFO.START_BLOCK > block.number, "IAZO has already starteds");
-        require(_startBlock > block.number, "Start block must be in future");
-        require(_activeBlocks >= IAZO_SETTINGS.getMinIAZOLength(), "Active iazo not long enough");
-        uint256 previousStartBlock = IAZO_TIME_INFO.START_BLOCK;
-        IAZO_TIME_INFO.START_BLOCK = _startBlock;
+    function updateStart(uint256 _startTime, uint256 _activeTime) external onlyIAZOOwner {
+        require(IAZO_TIME_INFO.START_TIME > block.timestamp, "IAZO has already started");
+        require(_startTime > block.timestamp, "Start time must be in future");
+        require(_activeTime >= IAZO_SETTINGS.getMinIAZOLength(), "Active iazo not long enough");
+        uint256 previousStartTime = IAZO_TIME_INFO.START_TIME;
+        IAZO_TIME_INFO.START_TIME = _startTime;
 
-        uint256 previousActiveBlocks = IAZO_TIME_INFO.ACTIVE_BLOCKS;
-        IAZO_TIME_INFO.ACTIVE_BLOCKS = _activeBlocks;
-        emit UpdateIAZOBlocks(previousStartBlock, IAZO_TIME_INFO.START_BLOCK, previousActiveBlocks, IAZO_TIME_INFO.ACTIVE_BLOCKS);
+        uint256 previousActiveTime = IAZO_TIME_INFO.ACTIVE_TIME;
+        IAZO_TIME_INFO.ACTIVE_TIME = _activeTime;
+        emit UpdateIAZOBlocks(previousStartTime, IAZO_TIME_INFO.START_TIME, previousActiveTime, IAZO_TIME_INFO.ACTIVE_TIME);
     }
 
     function updateMaxSpendLimit(uint256 _maxSpend) external onlyIAZOOwner {
@@ -307,10 +307,10 @@ contract IAZO is Initializable {
             return;
         }
 
-        uint256 apeswapBaseFee = FEE_INFO.PREPAID_FEE ? 0 : STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 100;
+        uint256 apeswapBaseFee = FEE_INFO.PREPAID_FEE ? 0 : STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
                 
         // base token liquidity
-        uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 100;
+        uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
         
         // deposit NATIVE to recieve WNATIVE tokens
         if (IAZO_INFO.IAZO_SALE_IN_NATIVE) {

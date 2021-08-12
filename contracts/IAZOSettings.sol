@@ -23,8 +23,8 @@ contract IAZOSettings {
         uint256 BASE_FEE; // base fee percentage
         uint256 MAX_BASE_FEE; // max base fee percentage
         uint256 NATIVE_CREATION_FEE; // fee to generate a IAZO contract on the platform
-        uint256 MIN_IAZO_LENGTH; // minimum iazo active blocks
-        uint256 MAX_IAZO_LENGTH; // maximum iazo active blocks
+        uint256 MIN_IAZO_LENGTH; // minimum iazo active seconds
+        uint256 MAX_IAZO_LENGTH; // maximum iazo active seconds
         uint256 MIN_LOCK_PERIOD;
     }
 
@@ -42,13 +42,13 @@ contract IAZOSettings {
     
     constructor(address admin, address feeAddress) {
         SETTINGS.ADMIN_ADDRESS = admin;
-        SETTINGS.BASE_FEE = 5;
-        SETTINGS.MAX_BASE_FEE = 30; // max base fee percentage
+        SETTINGS.BASE_FEE = 50; // 5% (divided by 1000)
+        SETTINGS.MAX_BASE_FEE = 300; // max base fee percentage - 30% (divided by 1000)
         SETTINGS.NATIVE_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(feeAddress);
-        SETTINGS.MIN_IAZO_LENGTH = 28700; // ~1 day
-        SETTINGS.MAX_IAZO_LENGTH = 602700; // ~3 weeks (when 28700 blocks in 1 day) 
-        SETTINGS.MIN_LOCK_PERIOD = 28; // in days
+        SETTINGS.MIN_IAZO_LENGTH = 86400; // 1 day (in seconds)
+        SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds) 
+        SETTINGS.MIN_LOCK_PERIOD = 2419000; // 28 days (in seconds)
         SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     }
 
