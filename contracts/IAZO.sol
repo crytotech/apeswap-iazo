@@ -240,6 +240,9 @@ contract IAZO is Initializable {
     }
 
     function userWithdrawSuccessPrivate() private {
+        if(!STATUS.LP_GENERATION_COMPLETE){
+            addLiquidity();
+        }
         require(STATUS.LP_GENERATION_COMPLETE, 'Awaiting LP generation');
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
