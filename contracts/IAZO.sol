@@ -240,7 +240,9 @@ contract IAZO is Initializable {
     }
 
     function userWithdrawSuccessPrivate() private {
-        addLiquidity();
+        if(!STATUS.LP_GENERATION_COMPLETE){
+            addLiquidity();
+        }
         require(STATUS.LP_GENERATION_COMPLETE, 'Awaiting LP generation');
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
@@ -294,7 +296,6 @@ contract IAZO is Initializable {
         emit UpdateMaxSpendLimit(previousMaxSpend, IAZO_INFO.MAX_SPEND_PER_BUYER);
     }
 
-    // FIXME: Function should lock liquidity before withdraws are allowed
     // final step when iazo is successfull. lock liquidity and enable withdrawals of sale token.
     function addLiquidity() public {      
         if(!STATUS.LP_GENERATION_COMPLETE){
