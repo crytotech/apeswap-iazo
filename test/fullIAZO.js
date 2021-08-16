@@ -1,19 +1,29 @@
-const truffleAssert = require('truffle-assertions');
-
-const IAZOFactory = artifacts.require("IAZOFactory");
-const IAZO = artifacts.require("IAZO");
-const IAZOSettings = artifacts.require("IAZOSettings");
-const IAZOExposer = artifacts.require("IAZOExposer");
-const Banana = artifacts.require("Banana");
-const WNATIVE = artifacts.require("WNativeMock");
-const IAZOUpgradeProxy = artifacts.require("IAZOUpgradeProxy");
-const ProxyAdminContract = artifacts.require("ProxyAdmin.sol");
-const IAZOLiquidityLocker = artifacts.require("IAZOLiquidityLocker");
-
+const { balance, expectRevert, time, ether } = require('@openzeppelin/test-helpers');
+const { accounts, contract } = require('@openzeppelin/test-environment');
+const { expect, assert } = require('chai');
 const { getNetworkConfig } = require("../deploy-config");
 
-contract("Simple test", async (accounts) => {
-    const { adminAddress, feeAddress, wNative, apeFactory } = getNetworkConfig('development', accounts);
+// Load compiled artifacts
+const WNativeMock = contract.fromArtifact("WNativeMock");
+const IAZOFactory = contract.fromArtifact("IAZOFactory");
+const IAZO = contract.fromArtifact("IAZO");
+const IAZOSettings = contract.fromArtifact("IAZOSettings");
+const IAZOExposer = contract.fromArtifact("IAZOExposer");
+const Banana = contract.fromArtifact("Banana");
+const WNATIVE = contract.fromArtifact("WNativeMock");
+const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
+const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
+
+
+function unixTimestamp() {
+    return Math.floor(Date.now() / 1000);
+}
+
+
+
+describe('IAZO', function () {
+    const [proxyAdmin, adminAddress] = accounts;
+    const { feeAddress, wNative, apeFactory } = getNetworkConfig('development', accounts);
 
     let factory = null;
     let banana = null;
@@ -21,124 +31,57 @@ contract("Simple test", async (accounts) => {
     let settings = null;
     let exposer = null;
     let iazo = null;
-    let admin = null;
-    let liquidity = null;
+    let liquidityLocker = null;
 
     it("Should set all contract variables", async () => {
-        banana = await Banana.deployed();
-        wnative = await WNATIVE.deployed();
+        banana = await WNativeMock.new();
+        wnative = await WNativeMock.new();
         iazo = await IAZO.new();
         exposer = await IAZOExposer.new();
         await exposer.transferOwnership(adminAddress);
         settings = await IAZOSettings.new(adminAddress, feeAddress);
-        admin = await ProxyAdminContract.new();
+
+        this.iazoStartTime = (await time.latest()) + 10;
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
-        const abiEncodeDataLiquidityLocker = web3.eth.abi.encodeFunctionCall(
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "iazoExposer",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "apeFactory",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "iazoSettings",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "admin",
-                        "type": "address"
-                    }
-                ],
-                "name": "initialize",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            [
-                exposer.address,
-                apeFactory,
-                settings.address,
-                admin.address
-            ]
-        );
-        const liquidityProxy = await IAZOUpgradeProxy.new(admin.address, liquidityLockerContract.address, abiEncodeDataLiquidityLocker);
-        liquidity = await IAZOLiquidityLocker.at(liquidityProxy.address);
+        const liquidityProxy = await IAZOUpgradeProxy.new(proxyAdmin, liquidityLockerContract.address, '0x');
+        liquidityLocker = await IAZOLiquidityLocker.at(liquidityProxy.address);
+        await liquidityLocker.initialize(exposer.address, apeFactory, settings.address, adminAddress);
 
         const factoryContract = await IAZOFactory.new();
-        const abiEncodeDataFactory = web3.eth.abi.encodeFunctionCall(
-            {
-                "inputs": [
-                    {
-                        "internalType": "contract IIAZO_EXPOSER",
-                        "name": "iazoExposer",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "contract IIAZOSettings",
-                        "name": "iazoSettings",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "contract IIAZOLiquidityLocker",
-                        "name": "iazoliquidityLocker",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "contract IIAZO",
-                        "name": "iazoInitialImplementation",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "contract IWNative",
-                        "name": "wnative",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "admin",
-                        "type": "address"
-                    }
-                ],
-                "name": "initialize",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            [
-                exposer.address,
-                settings.address,
-                liquidity.address,
-                iazo.address,
-                wNative,
-                admin.address
-            ]
-        );
-        const factoryProxy = await IAZOUpgradeProxy.new(admin.address, factoryContract.address, abiEncodeDataFactory);
+        const factoryProxy = await IAZOUpgradeProxy.new(proxyAdmin, factoryContract.address, '0x');
         factory = await IAZOFactory.at(factoryProxy.address);
+        factory.initialize(exposer.address, settings.address, liquidityLocker.address, iazo.address, wNative, adminAddress);
     });
 
     it("Should create and expose new IAZO", async () => {
         const FeeAddress = await settings.getFeeAddress();
-        const startBalance = await web3.eth.getBalance(FeeAddress);
+        const startBalance = await balance.current(FeeAddress, unit = 'wei')
 
         const startIAZOCount = await exposer.IAZOsLength();
 
         await banana.mint("2000000000000000000000000", { from: accounts[1] });
         await banana.approve(factory.address, "2000000000000000000000000", { from: accounts[1] });
-        const blockNumber = await web3.eth.getBlockNumber();
-        await factory.createIAZO(accounts[1], banana.address, wnative.address, true, false, ["100000000000000000", "21000000000000000000", "1000000000000000000", blockNumber + 2, 28700, 60, "2000000000000000000000000", "30", "200000000000000000"], { from: accounts[1], value: 1000000000000000000 })
+        await factory.createIAZO(
+            accounts[1], 
+            banana.address, 
+            wnative.address, 
+            true, 
+            false, 
+            [
+                "100000000000000000", // token price
+                "21000000000000000000", // amount
+                "1000000000000000000", // softcap
+                this.iazoStartTime, // start time
+                43201, // active time
+                2419000, // lock period
+                "2000000000000000000000000", // max spend per buyer
+                "30", // liquidity percent
+                "200000000000000000" // listing price
+            ], { from: accounts[1], value: 1000000000000000000 })
 
         //Fee check2
-        const newBalance = await web3.eth.getBalance(FeeAddress);
+        const newBalance = await balance.current(FeeAddress, unit = 'wei')
 
         assert.equal(
             newBalance - startBalance,
@@ -185,9 +128,9 @@ contract("Simple test", async (accounts) => {
         );
     });
 
-    it("iazo status should be in progress when start block reached", async () => {
-        //just anything to increase block number by 1 so the iazo start block is reached
-        web3.eth.sendTransaction({ to: accounts[2], from: accounts[0], value: "1000" })
+    it("iazo status should be in progress when start time is reached", async () => {
+        time.increaseTo(this.iazoStartTime);
+
 
         iazoStatus = await iazo.getIAZOState();
         assert.equal(
@@ -300,7 +243,7 @@ contract("Simple test", async (accounts) => {
     });
 
     it("Should approve locker to spend base token", async () => {
-        const allowance = await wnative.allowance(iazo.address, locker.address);
+        const allowance = await wnative.allowance(iazo.address, liquidityLocker.address);
 
         assert.equal(
             allowance,
@@ -310,7 +253,7 @@ contract("Simple test", async (accounts) => {
     });
 
     it("Should approve locker to spend iazo token", async () => {
-        const allowance = await banana.allowance(iazo.address, locker.address);
+        const allowance = await banana.allowance(iazo.address, liquidityLocker.address);
 
         assert.equal(
             allowance,
