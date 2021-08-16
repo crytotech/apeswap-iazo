@@ -31,6 +31,6 @@ interface IIAZOLiquidityLocker {
         uint256 _saleAmount,
         uint256 _unlock_date,
         address _withdrawer,
-        address _admin
+        address _iazoAddress
     ) external returns (address);
 }

@@ -2,8 +2,6 @@
 //ALL RIGHTS RESERVED
 //apeswap.finance
 
-// TODO: Make upgradeable
-
 /**
     This contract creates the lock on behalf of each IAZO. This contract will be whitelisted to bypass the flat rate 
     ETH fee. Please do not use the below locking code in your own contracts as the lock will fail without the ETH fee
@@ -23,11 +21,12 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol"; 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+import "./OwnableProxy.sol";
 import "./IAZOExposer.sol";
 import "./IAZOTokenTimelock.sol";
+import "./interface/IIAZOSettings.sol";
 
 interface IApeFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
@@ -85,12 +84,13 @@ interface IApePair {
     function initialize(address, address) external;
 }
 
-// TODO: Store contracts deployed from this contract
-contract IAZOLiquidityLocker is Ownable, Initializable {
+contract IAZOLiquidityLocker is OwnableProxy, Initializable {
     using SafeERC20 for IERC20;
 
     IAZOExposer public IAZO_EXPOSER;
     IApeFactory public APE_FACTORY;
+    IIAZOSettings public IAZO_SETTINGS;
+
     // Flag to determine contract type 
     bool public isIAZOLiquidityLocker = true;
 
@@ -106,9 +106,13 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         uint256 balance
     );
 
-    function initialize (address iazoExposer, address apeFactory) external initializer {
+    function initialize (address iazoExposer, address apeFactory, address iazoSettings, address admin) external initializer {
+        _owner = admin;
+        isIAZOLiquidityLocker = true;
+
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
+        IAZO_SETTINGS = IIAZOSettings(iazoSettings);
     }
 
     /**
@@ -133,8 +137,8 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         uint256 _baseAmount, 
         uint256 _saleAmount, 
         uint256 _unlock_date, 
-        address payable _withdrawer, 
-        address _admin
+        address payable _withdrawer,
+        address _iazoAddress
     ) external returns (address) {
         // Must be from a registered IAZO contract
         require(IAZO_EXPOSER.IAZOIsRegistered(msg.sender), 'IAZO NOT REGISTERED');
@@ -153,11 +157,10 @@ contract IAZOLiquidityLocker is Ownable, Initializable {
         uint256 totalLPTokensMinted = IApePair(pairAddress).balanceOf(address(this));
         require(totalLPTokensMinted != 0 , "LP creation failed");
 
-        // TODO: Instead of passing an admin address we can pass the settings contract so that it can reference a dynamic admin
-        IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(_admin, _withdrawer, _unlock_date, true);
+        IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(IAZO_SETTINGS, _withdrawer, _unlock_date, true);
         IApePair(pairAddress).approve(address(iazoTokenTimelock), totalLPTokensMinted);
         iazoTokenTimelock.deposit(pair, totalLPTokensMinted);
-        // TODO: Log the location of the lock
+        IAZO_EXPOSER.addTokenTimelock(_iazoAddress, address(iazoTokenTimelock));
         emit IAZOLiquidityLocked(msg.sender, iazoTokenTimelock, pairAddress, totalLPTokensMinted);
 
         return address(pair);

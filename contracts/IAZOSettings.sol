@@ -14,17 +14,17 @@ pragma solidity 0.8.6;
  * GitHub:          https://github.com/ApeSwapFinance
  */
 
-// TODO: Add a burn address, burn fee and add a burn token
 contract IAZOSettings {
 
     struct Settings {
         address ADMIN_ADDRESS;
         address payable FEE_ADDRESS;
+        address BURN_ADDRESS;
         uint256 BASE_FEE; // base fee percentage
         uint256 MAX_BASE_FEE; // max base fee percentage
-        uint256 ETH_CREATION_FEE; // fee to generate a IAZO contract on the platform
-        uint256 MIN_IAZO_LENGTH; // minimum iazo active blocks
-        uint256 MAX_IAZO_LENGTH; // maximum iazo active blocks
+        uint256 NATIVE_CREATION_FEE; // fee to generate a IAZO contract on the platform
+        uint256 MIN_IAZO_LENGTH; // minimum iazo active seconds
+        uint256 MAX_IAZO_LENGTH; // maximum iazo active seconds
         uint256 MIN_LOCK_PERIOD;
     }
 
@@ -34,6 +34,7 @@ contract IAZOSettings {
     event UpdateMinIAZOLength(uint256 previousMinLength, uint256 newMinLength);
     event UpdateMaxIAZOLength(uint256 previousMaxLength, uint256 newMaxLength);
     event UpdateMinLockPeriod(uint256 previousMinLockPeriod, uint256 newMinLockPeriod);
+    event UpdateBurnAddress(address previousBurnAddress, address newBurnAddress);
 
     Settings public SETTINGS;
 
@@ -41,17 +42,14 @@ contract IAZOSettings {
     
     constructor(address admin, address feeAddress) {
         SETTINGS.ADMIN_ADDRESS = admin;
-        // TODO: Are we happy with these fees?
-        SETTINGS.BASE_FEE = 5;
-        SETTINGS.MAX_BASE_FEE = 30; // max base fee percentage
-        SETTINGS.ETH_CREATION_FEE = 1e18;
+        SETTINGS.BASE_FEE = 50; // 5% (divided by 1000)
+        SETTINGS.MAX_BASE_FEE = 300; // max base fee percentage - 30% (divided by 1000)
+        SETTINGS.NATIVE_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(feeAddress);
-        // TODO: Update to 1 hour?
-        SETTINGS.MIN_IAZO_LENGTH = 28700; // ~1 day
-        SETTINGS.MAX_IAZO_LENGTH = 602700; // ~3 weeks (when 28700 blocks in 1 day) 
-        // TODO: Update min lock period?
-        // TODO: Do we need to use MIN_LOCK_PERIOD in LiquidityLocker?
-        SETTINGS.MIN_LOCK_PERIOD = 28; // in days
+        SETTINGS.MIN_IAZO_LENGTH = 43200; // 12 hrs (in seconds)
+        SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds) 
+        SETTINGS.MIN_LOCK_PERIOD = 2419000; // 28 days (in seconds)
+        SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     }
 
     modifier onlyAdmin {
@@ -86,8 +84,8 @@ contract IAZOSettings {
         return SETTINGS.MAX_BASE_FEE;
     }
     
-    function getEthCreationFee() external view returns (uint256) {
-        return SETTINGS.ETH_CREATION_FEE;
+    function getNativeCreationFee() external view returns (uint256) {
+        return SETTINGS.NATIVE_CREATION_FEE;
     }
 
     function getMinLockPeriod() external view returns (uint256) {
@@ -96,6 +94,10 @@ contract IAZOSettings {
     
     function getFeeAddress() external view returns (address payable) {
         return SETTINGS.FEE_ADDRESS;
+    }
+
+    function getBurnAddress() external view returns (address) {
+        return SETTINGS.BURN_ADDRESS;
     }
 
     function setAdminAddress(address _address) external onlyAdmin {
@@ -110,14 +112,14 @@ contract IAZOSettings {
         emit UpdateFeeAddress(previousFeeAddress, SETTINGS.FEE_ADDRESS);
     }
     
-    function setFees(uint256 _baseFee, uint256 _ethCreationFee) external onlyAdmin {
+    function setFees(uint256 _baseFee, uint256 _nativeCreationFee) external onlyAdmin {
         require(_baseFee <= SETTINGS.MAX_BASE_FEE, "base fee over max allowable");
         uint256 previousBaseFee = SETTINGS.BASE_FEE;
         SETTINGS.BASE_FEE = _baseFee;
 
-        uint256 previousETHFee = SETTINGS.ETH_CREATION_FEE;
-        SETTINGS.ETH_CREATION_FEE = _ethCreationFee;
-        emit UpdateFees(previousBaseFee, SETTINGS.BASE_FEE, previousETHFee, SETTINGS.ETH_CREATION_FEE);
+        uint256 previousETHFee = SETTINGS.NATIVE_CREATION_FEE;
+        SETTINGS.NATIVE_CREATION_FEE = _nativeCreationFee;
+        emit UpdateFees(previousBaseFee, SETTINGS.BASE_FEE, previousETHFee, SETTINGS.NATIVE_CREATION_FEE);
     }
 
     function setMaxIAZOLength(uint256 _maxLength) external onlyAdmin {
@@ -137,4 +139,10 @@ contract IAZOSettings {
         SETTINGS.MIN_LOCK_PERIOD = _minLockPeriod;
         emit UpdateMinLockPeriod(previousMinLockPeriod, SETTINGS.MIN_LOCK_PERIOD);
     }    
+
+    function setBurnAddress(address _burnAddress) external onlyAdmin {
+        address previousBurnAddress = SETTINGS.BURN_ADDRESS;
+        SETTINGS.BURN_ADDRESS = _burnAddress;
+        emit UpdateBurnAddress(previousBurnAddress, SETTINGS.BURN_ADDRESS);
+    }   
 }

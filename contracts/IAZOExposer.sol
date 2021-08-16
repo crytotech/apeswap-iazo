@@ -22,21 +22,26 @@ contract IAZOExposer is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     address public IAZO_FACTORY;
+    address public IAZO_LIQUIDITY_LOCKER;
 
     EnumerableSet.AddressSet private IAZOs;
 
     mapping(address => uint256) public IAZOAddressToIndex;
+    
+    mapping(address => address) public IAZOAddressToTokenTimelockAddress;
 
     bool public isIAZOExposer = true;
 
     bool private initialized = false;
 
-    event IAZORegistered(address indexed presaleContract);
+    event IAZORegistered(address indexed IAZOContract);
+    event IAZOTimelockAdded(address indexed IAZOContract, address indexed TimelockContract);
     event LogInit();
 
-    function initializeExposer(address iazoFactory) external {
+    function initializeExposer(address _iazoFactory, address _liquidityLocker) external {
         require(!initialized, "already initialized");
-        IAZO_FACTORY = iazoFactory;
+        IAZO_FACTORY = _iazoFactory;
+        IAZO_LIQUIDITY_LOCKER = _liquidityLocker;
         initialized = true;
         emit LogInit();
     }
@@ -58,6 +63,19 @@ contract IAZOExposer is Ownable {
         returns (bool)
     {
         return IAZOs.contains(_iazoAddress);
+    }
+    
+    function addTokenTimelock(address _iazoAddress, address _iazoTokenTimelock) external {
+        require(initialized, "not initialized");
+        require(msg.sender == IAZO_LIQUIDITY_LOCKER, "Forbidden");
+        require(IAZOAddressToTokenTimelockAddress[_iazoAddress] == address(0), "IAZO already has token timelock");
+        IAZOAddressToTokenTimelockAddress[_iazoAddress] = _iazoTokenTimelock;
+        emit IAZOTimelockAdded(_iazoAddress, _iazoTokenTimelock);
+    }
+
+    function getTokenTimelock(address _iazoAddress) external view returns (address){
+        require(IAZOAddressToTokenTimelockAddress[_iazoAddress] != address(0), "No TokenTimelock found");
+        return IAZOAddressToTokenTimelockAddress[_iazoAddress];
     }
 
     function IAZOAtIndex(uint256 _index) external view returns (address) {

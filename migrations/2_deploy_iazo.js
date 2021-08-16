@@ -4,24 +4,21 @@ const IAZOExposer = artifacts.require("IAZOExposer");
 const IAZO = artifacts.require("IAZO");
 const IAZOLiquidityLocker = artifacts.require("IAZOLiquidityLocker");
 const IAZOUpgradeProxy = artifacts.require("IAZOUpgradeProxy");
+
 const { getNetworkConfig } = require("../deploy-config");
 
 
 module.exports = async function (deployer, network, accounts) {
-  const { adminAddress, proxyAdmin, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
-  
+  const { proxyAdminAddress, adminAddress, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
+
   await deployer.deploy(IAZO);
-  
+
   const iazoExposer = await deployer.deploy(IAZOExposer);
   await iazoExposer.transferOwnership(adminAddress);
 
   await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
-  // constructor(address iazoExposer, address apeFactory) {
-  //   IAZO_EXPOSER = IAZOExposer(iazoExposer);
-  //   APE_FACTORY = IApeFactory(apeFactory);
-  // }
-  const iazoLiquidityLocker = await deployer.deploy(IAZOLiquidityLocker);
-  await iazoLiquidityLocker.transferOwnership(adminAddress);
+
+  await deployer.deploy(IAZOLiquidityLocker);
 
   const abiEncodeDataLiquidityLocker = web3.eth.abi.encodeFunctionCall(
     {
@@ -35,6 +32,16 @@ module.exports = async function (deployer, network, accounts) {
           "internalType": "address",
           "name": "apeFactory",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "iazoSettings",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -44,11 +51,14 @@ module.exports = async function (deployer, network, accounts) {
     },
     [
       IAZOExposer.address,
-      apeFactory
+      apeFactory,
+      IAZOSettings.address,
+      adminAddress
     ]
   );
 
-  await deployer.deploy(IAZOUpgradeProxy, proxyAdmin, IAZOLiquidityLocker.address, abiEncodeDataLiquidityLocker);
+  await deployer.deploy(IAZOUpgradeProxy, proxyAdminAddress, IAZOLiquidityLocker.address, abiEncodeDataLiquidityLocker);
+  const liquidityLockerAddress = IAZOUpgradeProxy.address;
 
   // Deployment of Factory and FactoryProxy
   await deployer.deploy(IAZOFactory);
@@ -80,6 +90,11 @@ module.exports = async function (deployer, network, accounts) {
           "internalType": "contract IWNative",
           "name": "wnative",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
         }
       ],
       "name": "initialize",
@@ -92,19 +107,25 @@ module.exports = async function (deployer, network, accounts) {
       IAZOSettings.address,
       IAZOLiquidityLocker.address,
       IAZO.address,
-      wNative
+      wNative,
+      adminAddress
     ]
   );
 
-  await deployer.deploy(IAZOUpgradeProxy, proxyAdmin, IAZOFactory.address, abiEncodeDataFactory);
+  await deployer.deploy(IAZOUpgradeProxy, proxyAdminAddress, IAZOFactory.address, abiEncodeDataFactory);
+
+  const factoryAddress = IAZOUpgradeProxy.address;
 
   console.dir({
-    IAZOUpgradeProxy: IAZOUpgradeProxy.address,
-    IAZOExposer: IAZOExposer.address, 
-    IAZOSettings: IAZOSettings.address, 
-    IAZOLiquidityLocker: IAZOLiquidityLocker.address, 
-    IAZOFactoryProxy: IAZOUpgradeProxy.address,
+    IAZOExposer: IAZOExposer.address,
+    IAZOSettings: IAZOSettings.address,
+    IAZOLiquidityLocker: IAZOLiquidityLocker.address,
+    IAZOLiquidityLockerProxy: liquidityLockerAddress,
+    IAZOFactory: IAZOFactory.address,
+    IAZOFactoryProxy: factoryAddress,
     IAZO: IAZO.address,
+    ProxyAdmin: proxyAdminAddress,
+    Admin: adminAddress,
     wNative
   });
 };

@@ -8,13 +8,16 @@
         "test": "test"
     },
     "scripts": {
-        "test": "truffle test",
+        "test": "yarn run compile && yarn mocha --exit --timeout 10000",
+        "tt": "yarn run compile && yarn mocha --exit --timeout 10000 && npm run coverage && rm -rf ./coverage && rm -rf ./coverage.json",
         "compile": "truffle compile",
         "migrate:dev": "truffle migrate --network development",
         "size": "yarn compile && truffle run contract-size"
     },
     "devDependencies": {
         "@openzeppelin/contracts": "^4.1.0",
+        "@openzeppelin/test-environment": "^0.1.9",
+        "@openzeppelin/test-helpers": "^0.5.13",
         "@truffle/hdwallet-provider": "^1.4.1",
         "bignumber.js": "^9.0.1",
         "chai": "^4.3.4",
