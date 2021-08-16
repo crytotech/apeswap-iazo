@@ -46,7 +46,7 @@ contract IAZOSettings {
         SETTINGS.MAX_BASE_FEE = 300; // max base fee percentage - 30% (divided by 1000)
         SETTINGS.NATIVE_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(feeAddress);
-        SETTINGS.MIN_IAZO_LENGTH = 86400; // 1 day (in seconds)
+        SETTINGS.MIN_IAZO_LENGTH = 43200; // 12 hrs (in seconds)
         SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds) 
         SETTINGS.MIN_LOCK_PERIOD = 2419000; // 28 days (in seconds)
         SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;

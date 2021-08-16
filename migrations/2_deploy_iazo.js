@@ -4,13 +4,12 @@ const IAZOExposer = artifacts.require("IAZOExposer");
 const IAZO = artifacts.require("IAZO");
 const IAZOLiquidityLocker = artifacts.require("IAZOLiquidityLocker");
 const IAZOUpgradeProxy = artifacts.require("IAZOUpgradeProxy");
-const ProxyAdminContract = artifacts.require("ProxyAdmin.sol");
 
 const { getNetworkConfig } = require("../deploy-config");
 
 
 module.exports = async function (deployer, network, accounts) {
-  const { adminAddress, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
+  const { proxyAdminAddress, adminAddress, feeAddress, wNative, apeFactory } = getNetworkConfig(network, accounts);
 
   await deployer.deploy(IAZO);
 
@@ -18,8 +17,6 @@ module.exports = async function (deployer, network, accounts) {
   await iazoExposer.transferOwnership(adminAddress);
 
   await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
-
-  await deployer.deploy(ProxyAdminContract);
 
   await deployer.deploy(IAZOLiquidityLocker);
 
@@ -60,11 +57,11 @@ module.exports = async function (deployer, network, accounts) {
     ]
   );
 
-  await deployer.deploy(IAZOUpgradeProxy, ProxyAdminContract.address, IAZOLiquidityLocker.address, abiEncodeDataLiquidityLocker);
+  await deployer.deploy(IAZOUpgradeProxy, proxyAdminAddress, IAZOLiquidityLocker.address, abiEncodeDataLiquidityLocker);
   const liquidityLockerAddress = IAZOUpgradeProxy.address;
 
   // Deployment of Factory and FactoryProxy
-  const iazoFactory = await deployer.deploy(IAZOFactory);
+  await deployer.deploy(IAZOFactory);
 
   const abiEncodeDataFactory = web3.eth.abi.encodeFunctionCall(
     {
@@ -115,7 +112,7 @@ module.exports = async function (deployer, network, accounts) {
     ]
   );
 
-  await deployer.deploy(IAZOUpgradeProxy, ProxyAdminContract.address, IAZOFactory.address, abiEncodeDataFactory);
+  await deployer.deploy(IAZOUpgradeProxy, proxyAdminAddress, IAZOFactory.address, abiEncodeDataFactory);
 
   const factoryAddress = IAZOUpgradeProxy.address;
 
@@ -127,7 +124,8 @@ module.exports = async function (deployer, network, accounts) {
     IAZOFactory: IAZOFactory.address,
     IAZOFactoryProxy: factoryAddress,
     IAZO: IAZO.address,
-    ProxyAdmin: ProxyAdminContract.address,
+    ProxyAdmin: proxyAdminAddress,
+    Admin: adminAddress,
     wNative
   });
 };

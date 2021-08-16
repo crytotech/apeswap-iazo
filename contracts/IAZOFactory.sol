@@ -58,7 +58,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
     IIAZO[] public IAZOImplementations;
     uint256 public IAZOVersion = 0;
 
-    bool public isIAZOFactory = true;
+    bool constant public isIAZOFactory = true;
 
     event IAZOCreated(address indexed newIAZO);
     event PushIAZOVersion(IIAZO indexed newIAZO, uint256 versionId);
@@ -91,8 +91,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
         address admin
     ) external initializer {
         _owner = admin;
-        isIAZOFactory = true;
-
+        // Setup the initial IAZO code to be used as the implementation
         require(iazoInitialImplementation.isIAZO(), 'implementation does not appear to be IAZO');
         IAZOImplementations.push(iazoInitialImplementation);
         IAZO_EXPOSER = iazoExposer;
