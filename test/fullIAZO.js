@@ -3,29 +3,25 @@ const { accounts, contract } = require('@openzeppelin/test-environment');
 const { expect, assert } = require('chai');
 const { getNetworkConfig } = require("../deploy-config");
 
+const ApeFactoryBuild = require('../build-apeswap-dex/contracts/ApeFactory.json');
+const ApeFactory = contract.fromABI(ApeFactoryBuild.abi, ApeFactoryBuild.bytecode);
+
 // Load compiled artifacts
 const WNativeMock = contract.fromArtifact("WNativeMock");
 const IAZOFactory = contract.fromArtifact("IAZOFactory");
 const IAZO = contract.fromArtifact("IAZO");
 const IAZOSettings = contract.fromArtifact("IAZOSettings");
 const IAZOExposer = contract.fromArtifact("IAZOExposer");
-const Banana = contract.fromArtifact("Banana");
-const WNATIVE = contract.fromArtifact("WNativeMock");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 
 
-function unixTimestamp() {
-    return Math.floor(Date.now() / 1000);
-}
-
-
-
 describe('IAZO', function () {
-    const [proxyAdmin, adminAddress] = accounts;
-    const { feeAddress, wNative, apeFactory } = getNetworkConfig('development', accounts);
+    const [proxyAdmin, adminAddress, feeToSetter] = accounts;
+    const { feeAddress, wNative } = getNetworkConfig('development', accounts);
 
-    let factory = null;
+    let dexFactory = null;
+    let iazoFactory = null;
     let banana = null;
     let wnative = null;
     let settings = null;
@@ -35,23 +31,36 @@ describe('IAZO', function () {
 
     it("Should set all contract variables", async () => {
         banana = await WNativeMock.new();
-        wnative = await WNativeMock.new();
+        wnative = await WNativeMock.new();  
         iazo = await IAZO.new();
         exposer = await IAZOExposer.new();
         await exposer.transferOwnership(adminAddress);
         settings = await IAZOSettings.new(adminAddress, feeAddress);
+        dexFactory = await ApeFactory.new(feeToSetter);
 
         this.iazoStartTime = (await time.latest()) + 10;
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
         const liquidityProxy = await IAZOUpgradeProxy.new(proxyAdmin, liquidityLockerContract.address, '0x');
         liquidityLocker = await IAZOLiquidityLocker.at(liquidityProxy.address);
-        await liquidityLocker.initialize(exposer.address, apeFactory, settings.address, adminAddress);
+        await liquidityLocker.initialize(
+            exposer.address, 
+            dexFactory.address, 
+            settings.address, 
+            adminAddress
+        );
 
         const factoryContract = await IAZOFactory.new();
         const factoryProxy = await IAZOUpgradeProxy.new(proxyAdmin, factoryContract.address, '0x');
-        factory = await IAZOFactory.at(factoryProxy.address);
-        factory.initialize(exposer.address, settings.address, liquidityLocker.address, iazo.address, wNative, adminAddress);
+        iazoFactory = await IAZOFactory.at(factoryProxy.address);
+        await iazoFactory.initialize(
+            exposer.address, 
+            settings.address, 
+            liquidityLocker.address, 
+            iazo.address, 
+            wNative, 
+            adminAddress
+        );
     });
 
     it("Should create and expose new IAZO", async () => {
@@ -61,8 +70,8 @@ describe('IAZO', function () {
         const startIAZOCount = await exposer.IAZOsLength();
 
         await banana.mint("2000000000000000000000000", { from: accounts[1] });
-        await banana.approve(factory.address, "2000000000000000000000000", { from: accounts[1] });
-        await factory.createIAZO(
+        await banana.approve(iazoFactory.address, "2000000000000000000000000", { from: accounts[1] });
+        await iazoFactory.createIAZO(
             accounts[1], 
             banana.address, 
             wnative.address, 
