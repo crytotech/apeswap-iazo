@@ -245,16 +245,7 @@ describe('IAZO', function () {
         wnativeBalance = await wnative.balanceOf(carol);
         await currentIazo.addLiquidity();
         status = await currentIazo.STATUS.call();
-
-        // struct IAZOStatus {
-        //     bool LP_GENERATION_COMPLETE; // final flag required to end a iazo and enable withdrawls
-        //     bool FORCE_FAILED; // set this flag to force fail the iazo
-        //     uint256 TOTAL_BASE_COLLECTED; // total base currency raised (usually ETH)
-        //     uint256 TOTAL_TOKENS_SOLD; // total iazo tokens sold
-        //     uint256 TOTAL_TOKENS_WITHDRAWN; // total tokens withdrawn post successful iazo
-        //     uint256 TOTAL_BASE_WITHDRAWN; // total base tokens withdrawn on iazo failure
-        //     uint256 NUM_BUYERS; // number of unique participants
-        // }
+        
         assert.equal(
             status.LP_GENERATION_COMPLETE,
             true,
