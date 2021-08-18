@@ -247,20 +247,22 @@ contract IAZO is Initializable {
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
         STATUS.TOTAL_TOKENS_WITHDRAWN += buyer.tokensBought;
+        uint256 tokensToTransfer = buyer.tokensBought;
         buyer.tokensBought = 0;
-        IAZO_INFO.IAZO_TOKEN.safeTransfer(msg.sender, buyer.tokensBought);
+        IAZO_INFO.IAZO_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
     }
 
     function userWithdrawFailedPrivate() private {
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.deposited > 0, 'Nothing to withdraw');
         STATUS.TOTAL_BASE_WITHDRAWN += buyer.deposited;
+        uint256 tokensToTransfer = buyer.deposited;
         buyer.deposited = 0;
         
         if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-            payable(msg.sender).transfer(buyer.deposited);
+            payable(msg.sender).transfer(tokensToTransfer);
         } else {
-            IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, buyer.deposited);
+            IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
         }
     }
 

@@ -164,13 +164,13 @@ contract IAZOFactory is OwnableProxy, Initializable {
             params.LIQUIDITY_PERCENT >= 30 && params.LIQUIDITY_PERCENT <= 100,
             "Liquidity percentage too low"
         ); // 30% minimum liquidity lock
-
+        // Find the hard cap of the offering in base tokens
         uint256 tokenDecimals = _IAZOToken.decimals();
-        uint256 hardcap = params.AMOUNT * params.TOKEN_PRICE / (10 ** tokenDecimals);
+        uint256 hardcap = getHardCap(params.AMOUNT, params.TOKEN_PRICE, tokenDecimals);
         // Check that the hardcap is greater than or equal to softcap
         require(hardcap >= params.SOFTCAP, 'softcap is greater than hardcap');
 
-        uint256 tokensRequired = getTokensRequired(
+        uint256 tokensRequired = getTokensRequiredInternal(
             params.AMOUNT,
             params.LISTING_PRICE, 
             params.LIQUIDITY_PERCENT,
@@ -188,12 +188,32 @@ contract IAZOFactory is OwnableProxy, Initializable {
         IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(IAZO_SETTINGS.getBurnAddress(), address(IAZOImplementations[IAZOVersion]), '');
         IIAZO(address(newIAZO)).initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, WNATIVE);
         IAZO_EXPOSER.registerIAZO(address(newIAZO));
-
         _IAZOToken.transferFrom(address(msg.sender), address(newIAZO), tokensRequired);
+        // trasnfer check and reflect token protection
+        require(_IAZOToken.balanceOf(address(newIAZO)) == tokensRequired, 'invalid amount transferred in');
         emit IAZOCreated(address(newIAZO));
     }
 
+    function getHardCap(
+        uint256 _amount, 
+        uint256 _tokenPrice, 
+        uint256 _decimals
+    ) public pure returns (uint256 hardcap) {
+        hardcap = _amount * _tokenPrice / (10 ** _decimals);
+    }
+
     function getTokensRequired (
+        uint256 _amount, 
+        uint256 _tokenPrice, 
+        uint256 _listingPrice, 
+        uint256 _liquidityPercent, 
+        uint256 _decimals
+    ) external pure returns (uint256) {
+        uint256 hardcap = getHardCap(_amount, _tokenPrice, _decimals);
+        return getTokensRequiredInternal(_amount, _listingPrice, _liquidityPercent, hardcap, _decimals);
+    }
+
+    function getTokensRequiredInternal (
         uint256 _amount, 
         uint256 _listingPrice, 
         uint256 _liquidityPercent, 
