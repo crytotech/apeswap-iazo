@@ -69,7 +69,7 @@ describe("IAZO - Negative Tests", async function() {
                 43201, // active time
                 2419000, // lock period
                 "2000000000000000000000000", // max spend per buyer
-                "30", // liquidity percent
+                "300", // liquidity percent
                 0 // listing price
             ], { from: accounts[1], value: 1000000000000000000 })
 

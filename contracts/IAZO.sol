@@ -136,8 +136,8 @@ contract IAZO is Initializable {
         IAZO_TIME_INFO.LOCK_PERIOD = _uint256s[9];
         FEE_INFO.BASE_FEE = _uint256s[10];
 
-        IAZO_INFO.BURN_REMAINS = _bools[0]; // Burn remainder of IAZO tokens not sold
-        FEE_INFO.PREPAID_FEE = _bools[1]; // Fee paid by IAZO creator beforehand
+        FEE_INFO.PREPAID_FEE = _bools[0]; // Fee paid by IAZO creator beforehand
+        IAZO_INFO.BURN_REMAINS = _bools[1]; // Burn remainder of IAZO tokens not sold
 
         IAZO_INFO.IAZO_TOKEN = _ERC20s[0]; // Token for sale 
         IAZO_INFO.BASE_TOKEN = _ERC20s[1]; // Token used to buy IAZO token

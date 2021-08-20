@@ -82,7 +82,7 @@ describe('IAZO', function () {
             activeTime: 43201, // active time
             lockPeriod: 2419000, // lock period
             maxSpendPerBuyer: ether("2000000"), // max spend per buyer
-            liquidityPercent: "30", // liquidity percent
+            liquidityPercent: "300", // liquidity percent
             listingPrice: ether(".2") // listing price
         }
         await iazoFactory.createIAZO(
@@ -320,7 +320,7 @@ describe('IAZO', function () {
         assert.equal(
             newWnativeBalance - wnativeBalance,
             "1470000000000000000",
-            "wrong allowance"
+            "wrong balance"
         );
     });
 });
