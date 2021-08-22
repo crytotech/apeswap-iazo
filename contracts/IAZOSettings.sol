@@ -106,7 +106,7 @@ contract IAZOSettings {
         emit AdminTransferred(previousAdmin, SETTINGS.ADMIN_ADDRESS);
     }
     
-    function setFeeAddresses(address payable _address) external onlyAdmin {
+    function setFeeAddress(address payable _address) external onlyAdmin {
         address previousFeeAddress = SETTINGS.FEE_ADDRESS;
         SETTINGS.FEE_ADDRESS = _address;
         emit UpdateFeeAddress(previousFeeAddress, SETTINGS.FEE_ADDRESS);
@@ -123,12 +123,14 @@ contract IAZOSettings {
     }
 
     function setMaxIAZOLength(uint256 _maxLength) external onlyAdmin {
+        require(_maxLength >= SETTINGS.MIN_IAZO_LENGTH);
         uint256 previousMaxLength = SETTINGS.MAX_IAZO_LENGTH;
         SETTINGS.MAX_IAZO_LENGTH = _maxLength;
         emit UpdateMaxIAZOLength(previousMaxLength, SETTINGS.MAX_IAZO_LENGTH);
     }  
 
     function setMinIAZOLength(uint256 _minLength) external onlyAdmin {
+        require(_minLength <= SETTINGS.MAX_IAZO_LENGTH);
         uint256 previousMinLength = SETTINGS.MIN_IAZO_LENGTH;
         SETTINGS.MIN_IAZO_LENGTH = _minLength;
         emit UpdateMinIAZOLength(previousMinLength, SETTINGS.MIN_IAZO_LENGTH);
