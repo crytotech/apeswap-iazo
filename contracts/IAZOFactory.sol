@@ -52,7 +52,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
-    IWNative public WNATIVE;
+    IWNative public ERC20Mock;
 
     bytes public abiEncodeData;
     IIAZO[] public IAZOImplementations;
@@ -100,7 +100,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
         require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
         IAZO_LIQUIDITY_LOCKER = iazoliquidityLocker;
         require(IAZO_LIQUIDITY_LOCKER.isIAZOLiquidityLocker(), 'isIAZOLiquidityLocker call returns false');
-        WNATIVE = wnative;
+        ERC20Mock = wnative;
     }
 
     // Create new IAZO and add address to IAZOExposer.
@@ -161,16 +161,16 @@ contract IAZOFactory is OwnableProxy, Initializable {
         require(params.TOKEN_PRICE > 0, "Invalid token price");
         /// @dev Adjust liquidity percentage settings here
         require(
-            params.LIQUIDITY_PERCENT >= 30 && params.LIQUIDITY_PERCENT <= 100,
+            params.LIQUIDITY_PERCENT >= 300 && params.LIQUIDITY_PERCENT <= 1000,
             "Liquidity percentage too low"
         ); // 30% minimum liquidity lock
-
+        // Find the hard cap of the offering in base tokens
         uint256 tokenDecimals = _IAZOToken.decimals();
-        uint256 hardcap = params.AMOUNT * params.TOKEN_PRICE / (10 ** tokenDecimals);
+        uint256 hardcap = getHardCap(params.AMOUNT, params.TOKEN_PRICE, tokenDecimals);
         // Check that the hardcap is greater than or equal to softcap
         require(hardcap >= params.SOFTCAP, 'softcap is greater than hardcap');
 
-        uint256 tokensRequired = getTokensRequired(
+        uint256 tokensRequired = getTokensRequiredInternal(
             params.AMOUNT,
             params.LISTING_PRICE, 
             params.LIQUIDITY_PERCENT,
@@ -186,21 +186,41 @@ contract IAZOFactory is OwnableProxy, Initializable {
         ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
         // Deploy proxy contract and set implementation to current IAZO version 
         IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(IAZO_SETTINGS.getBurnAddress(), address(IAZOImplementations[IAZOVersion]), '');
-        IIAZO(address(newIAZO)).initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, WNATIVE);
+        IIAZO(address(newIAZO)).initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, ERC20Mock);
         IAZO_EXPOSER.registerIAZO(address(newIAZO));
-
         _IAZOToken.transferFrom(address(msg.sender), address(newIAZO), tokensRequired);
+        // trasnfer check and reflect token protection
+        require(_IAZOToken.balanceOf(address(newIAZO)) == tokensRequired, 'invalid amount transferred in');
         emit IAZOCreated(address(newIAZO));
     }
 
+    function getHardCap(
+        uint256 _amount, 
+        uint256 _tokenPrice, 
+        uint256 _decimals
+    ) public pure returns (uint256 hardcap) {
+        hardcap = _amount * _tokenPrice / (10 ** _decimals);
+    }
+
     function getTokensRequired (
+        uint256 _amount, 
+        uint256 _tokenPrice, 
+        uint256 _listingPrice, 
+        uint256 _liquidityPercent, 
+        uint256 _decimals
+    ) external pure returns (uint256) {
+        uint256 hardcap = getHardCap(_amount, _tokenPrice, _decimals);
+        return getTokensRequiredInternal(_amount, _listingPrice, _liquidityPercent, hardcap, _decimals);
+    }
+
+    function getTokensRequiredInternal (
         uint256 _amount, 
         uint256 _listingPrice, 
         uint256 _liquidityPercent, 
         uint256 _hardcap, 
         uint256 _decimals
     ) internal pure returns (uint256) {
-        uint256 liquidityRequired = _hardcap * _liquidityPercent * (10 ** _decimals) / 100 / _listingPrice;
+        uint256 liquidityRequired = _hardcap * _liquidityPercent * (10 ** _decimals) / 1000 / _listingPrice;
         require(liquidityRequired > 0, "Something wrong with liquidity values");
         uint256 tokensRequired = _amount + liquidityRequired;
         return tokensRequired;

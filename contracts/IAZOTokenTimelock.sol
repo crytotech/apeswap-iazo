@@ -56,7 +56,7 @@ contract IAZOTokenTimelock {
         bool revocable_
     ) {
         IAZO_SETTINGS = settings_;
-        beneficiaries.add(beneficiary_);
+        addBeneficiaryInternal(beneficiary_);
         
         releaseTime = releaseTime_;
         revocable = revocable_;
@@ -73,10 +73,22 @@ contract IAZOTokenTimelock {
 
     modifier onlyBeneficiary {
         require(
-            beneficiaries.contains(msg.sender),
+            isBeneficiary(msg.sender),
             "DOES_NOT_HAVE_BENEFICIARY_ROLE"
         );
         _;
+    }
+
+    function numberOfBeneficiaries() external view returns (uint256) {
+        return beneficiaries.length();
+    }
+
+    function beneficiaryAtIndex(uint256 _index) external view returns (address) {
+        return beneficiaries.at(_index);
+    }
+
+    function isBeneficiary(address _address) public view returns (bool) {
+        return beneficiaries.contains(_address);
     }
 
     function deposit(IERC20 _token, uint256 _amount) external {
@@ -87,7 +99,7 @@ contract IAZOTokenTimelock {
     /**
      * @notice Transfers tokens held by timelock to beneficiary.
      */
-    function release(IERC20 _token) public virtual onlyBeneficiary {
+    function release(IERC20 _token) public onlyBeneficiary {
         require(
             block.timestamp >= releaseTime || revoked[address(_token)],
             "TokenTimelock: current time is before release time or not revoked"
@@ -101,9 +113,16 @@ contract IAZOTokenTimelock {
     }
 
     /**
-     * @notice Transfers tokens held by timelock to beneficiary.
+     * @notice Add an address that is eligible to unlock tokens.
      */
-    function addBeneficiary(address newBeneficiary) public virtual onlyBeneficiary {
+    function addBeneficiary(address newBeneficiary) public onlyBeneficiary {
+        addBeneficiaryInternal(newBeneficiary);
+    }
+
+    /**
+     * @notice Add an address that is eligible to unlock tokens.
+     */
+    function addBeneficiaryInternal(address newBeneficiary) internal {
         beneficiaries.add(newBeneficiary);
         emit BeneficiaryAdded(newBeneficiary);
     }

@@ -93,7 +93,7 @@ contract IAZO is Initializable {
     // contracts
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
-    IWNative WNATIVE;
+    IWNative ERC20Mock;
     /// @dev reference variable
     address public IAZO_FACTORY;
     // addresses
@@ -115,7 +115,7 @@ contract IAZO is Initializable {
         IWNative _wnative
     ) external initializer {
         IAZO_FACTORY = msg.sender;
-        WNATIVE = _wnative;
+        ERC20Mock = _wnative;
 
         IAZO_SETTINGS = IIAZOSettings(_addresses[0]);
         IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_addresses[1]);
@@ -123,7 +123,7 @@ contract IAZO is Initializable {
         IAZO_INFO.IAZO_OWNER = _addressesPayable[0]; // User which created the IAZO
         FEE_INFO.FEE_ADDRESS = _addressesPayable[1];
 
-        IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_ERC20s[1]) == address(WNATIVE) ? true : false;
+        IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_ERC20s[1]) == address(ERC20Mock) ? true : false;
         IAZO_INFO.TOKEN_PRICE = _uint256s[0]; // Price of time in base currency
         IAZO_INFO.AMOUNT = _uint256s[1]; // Amount of tokens for sale
         IAZO_INFO.HARDCAP = _uint256s[2]; // Hardcap base token to collect (TOKEN_PRICE * AMOUNT)
@@ -136,8 +136,8 @@ contract IAZO is Initializable {
         IAZO_TIME_INFO.LOCK_PERIOD = _uint256s[9];
         FEE_INFO.BASE_FEE = _uint256s[10];
 
-        IAZO_INFO.BURN_REMAINS = _bools[0]; // Burn remainder of IAZO tokens not sold
-        FEE_INFO.PREPAID_FEE = _bools[1]; // Fee paid by IAZO creator beforehand
+        FEE_INFO.PREPAID_FEE = _bools[0]; // Fee paid by IAZO creator beforehand
+        IAZO_INFO.BURN_REMAINS = _bools[1]; // Burn remainder of IAZO tokens not sold
 
         IAZO_INFO.IAZO_TOKEN = _ERC20s[0]; // Token for sale 
         IAZO_INFO.BASE_TOKEN = _ERC20s[1]; // Token used to buy IAZO token
@@ -243,24 +243,25 @@ contract IAZO is Initializable {
         if(!STATUS.LP_GENERATION_COMPLETE){
             addLiquidity();
         }
-        require(STATUS.LP_GENERATION_COMPLETE, 'Awaiting LP generation');
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
         STATUS.TOTAL_TOKENS_WITHDRAWN += buyer.tokensBought;
+        uint256 tokensToTransfer = buyer.tokensBought;
         buyer.tokensBought = 0;
-        IAZO_INFO.IAZO_TOKEN.safeTransfer(msg.sender, buyer.tokensBought);
+        IAZO_INFO.IAZO_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
     }
 
     function userWithdrawFailedPrivate() private {
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.deposited > 0, 'Nothing to withdraw');
         STATUS.TOTAL_BASE_WITHDRAWN += buyer.deposited;
+        uint256 tokensToTransfer = buyer.deposited;
         buyer.deposited = 0;
         
         if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-            payable(msg.sender).transfer(buyer.deposited);
+            payable(msg.sender).transfer(tokensToTransfer);
         } else {
-            IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, buyer.deposited);
+            IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
         }
     }
 
@@ -297,78 +298,78 @@ contract IAZO is Initializable {
     }
 
     // final step when iazo is successfull. lock liquidity and enable withdrawals of sale token.
-    function addLiquidity() public {      
-        if(!STATUS.LP_GENERATION_COMPLETE){
-            uint256 currentIAZOState = getIAZOState();
-            // Check if IAZO SUCCESS or HARDCAT met
-            require(currentIAZOState == 2 || currentIAZOState == 3, 'IAZO failed or still in progress'); // SUCCESS
+    function addLiquidity() public { 
+        require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');
+        uint256 currentIAZOState = getIAZOState();
+        // Check if IAZO SUCCESS or HARDCAT met
+        require(currentIAZOState == 2 || currentIAZOState == 3, 'IAZO failed or still in progress'); // SUCCESS
 
-            // If pair for this token has already been initalized, then this will fail the IAZO
-            if (IAZO_LIQUIDITY_LOCKER.apePairIsInitialised(address(IAZO_INFO.IAZO_TOKEN), address(IAZO_INFO.BASE_TOKEN))) {
-                STATUS.FORCE_FAILED = true;
-                return;
-            }
-
-            uint256 apeswapBaseFee = FEE_INFO.PREPAID_FEE ? 0 : STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
-                    
-            // base token liquidity
-            uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
-            
-            // deposit NATIVE to recieve WNATIVE tokens
-            if (IAZO_INFO.IAZO_SALE_IN_NATIVE) {
-                WNATIVE.deposit{value : baseLiquidity}();
-            }
-
-            IAZO_INFO.BASE_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), baseLiquidity);
-
-            // sale token liquidity
-            uint256 saleTokenLiquidity = baseLiquidity * (10 ** IAZO_INFO.IAZO_TOKEN.decimals()) / IAZO_INFO.LISTING_PRICE;
-            IAZO_INFO.IAZO_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), saleTokenLiquidity);
-
-            address newTokenLockContract = IAZO_LIQUIDITY_LOCKER.lockLiquidity(
-                IAZO_INFO.BASE_TOKEN, 
-                IAZO_INFO.IAZO_TOKEN, 
-                baseLiquidity, 
-                saleTokenLiquidity, 
-                block.timestamp + IAZO_TIME_INFO.LOCK_PERIOD, 
-                IAZO_INFO.IAZO_OWNER,
-                address(this)
-            );
-            TOKEN_LOCK_ADDRESS = newTokenLockContract;
-
-            if(!FEE_INFO.PREPAID_FEE)
-            {
-                if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-                    FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
-                } else { 
-                    IAZO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
-                }
-                emit BaseFeeCollected(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
-            }
-
-            // send remaining iazo tokens to iazo owner
-            uint256 remainingIAZOTokenBalance = IAZO_INFO.IAZO_TOKEN.balanceOf(address(this));
-            if (remainingIAZOTokenBalance > STATUS.TOTAL_TOKENS_SOLD) {
-                uint256 amountLeft = remainingIAZOTokenBalance - STATUS.TOTAL_TOKENS_SOLD;
-                if(IAZO_INFO.BURN_REMAINS){
-                    IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_SETTINGS.getBurnAddress(), amountLeft);
-                } else {
-                    IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, amountLeft);
-                }
-            }
-            
-            // send remaining base tokens to iazo owner
-            uint256 remainingBaseBalance = IAZO_INFO.IAZO_SALE_IN_NATIVE ? address(this).balance : IAZO_INFO.BASE_TOKEN.balanceOf(address(this));
-            
-            if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-                IAZO_INFO.IAZO_OWNER.transfer(remainingBaseBalance);
-            } else {
-                IAZO_INFO.BASE_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, remainingBaseBalance);
-            }
-            
-            STATUS.LP_GENERATION_COMPLETE = true;
-            emit AddLiquidity(baseLiquidity, saleTokenLiquidity, remainingBaseBalance);
+        // If pair for this token has already been initalized, then this will fail the IAZO
+        if (IAZO_LIQUIDITY_LOCKER.apePairIsInitialised(address(IAZO_INFO.IAZO_TOKEN), address(IAZO_INFO.BASE_TOKEN))) {
+            STATUS.FORCE_FAILED = true;
+            return;
         }
+
+        uint256 apeswapBaseFee = FEE_INFO.PREPAID_FEE ? 0 : STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
+                
+        // base token liquidity
+        uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
+        
+        // deposit NATIVE to recieve ERC20Mock tokens
+        if (IAZO_INFO.IAZO_SALE_IN_NATIVE) {
+            ERC20Mock.deposit{value : baseLiquidity}();
+        }
+
+        IAZO_INFO.BASE_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), baseLiquidity);
+
+        // sale token liquidity
+        uint256 saleTokenLiquidity = baseLiquidity * (10 ** IAZO_INFO.IAZO_TOKEN.decimals()) / IAZO_INFO.LISTING_PRICE;
+        IAZO_INFO.IAZO_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), saleTokenLiquidity);
+
+        address newTokenLockContract = IAZO_LIQUIDITY_LOCKER.lockLiquidity(
+            IAZO_INFO.BASE_TOKEN, 
+            IAZO_INFO.IAZO_TOKEN, 
+            baseLiquidity, 
+            saleTokenLiquidity, 
+            block.timestamp + IAZO_TIME_INFO.LOCK_PERIOD, 
+            IAZO_INFO.IAZO_OWNER,
+            address(this)
+        );
+        TOKEN_LOCK_ADDRESS = newTokenLockContract;
+
+        if(!FEE_INFO.PREPAID_FEE)
+        {
+            if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
+                FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
+            } else { 
+                IAZO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
+            }
+            emit BaseFeeCollected(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
+        }
+
+        // send remaining iazo tokens to iazo owner
+        uint256 remainingIAZOTokenBalance = IAZO_INFO.IAZO_TOKEN.balanceOf(address(this));
+        if (remainingIAZOTokenBalance > STATUS.TOTAL_TOKENS_SOLD) {
+            uint256 amountLeft = remainingIAZOTokenBalance - STATUS.TOTAL_TOKENS_SOLD;
+            if(IAZO_INFO.BURN_REMAINS){
+                IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_SETTINGS.getBurnAddress(), amountLeft);
+            } else {
+                IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, amountLeft);
+            }
+        }
+        
+        // send remaining base tokens to iazo owner
+        uint256 remainingBaseBalance = IAZO_INFO.IAZO_SALE_IN_NATIVE ? address(this).balance : IAZO_INFO.BASE_TOKEN.balanceOf(address(this));
+        
+        if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
+            IAZO_INFO.IAZO_OWNER.transfer(remainingBaseBalance);
+        } else {
+            IAZO_INFO.BASE_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, remainingBaseBalance);
+        }
+        
+        STATUS.LP_GENERATION_COMPLETE = true;
+        emit AddLiquidity(baseLiquidity, saleTokenLiquidity, remainingBaseBalance);
+
     }
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 

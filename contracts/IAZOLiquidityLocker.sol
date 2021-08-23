@@ -92,7 +92,7 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
     IIAZOSettings public IAZO_SETTINGS;
 
     // Flag to determine contract type 
-    bool public isIAZOLiquidityLocker = true;
+    bool constant public isIAZOLiquidityLocker = true;
 
     event IAZOLiquidityLocked(
         address indexed iazo, 
@@ -108,7 +108,6 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
 
     function initialize (address iazoExposer, address apeFactory, address iazoSettings, address admin) external initializer {
         _owner = admin;
-        isIAZOLiquidityLocker = true;
 
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
@@ -142,24 +141,30 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
     ) external returns (address) {
         // Must be from a registered IAZO contract
         require(IAZO_EXPOSER.IAZOIsRegistered(msg.sender), 'IAZO NOT REGISTERED');
-
+        // get/setup pair
         address pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
-        IERC20 pair = IERC20(pairAddress);
         if (pairAddress == address(0)) {
             APE_FACTORY.createPair(address(_baseToken), address(_saleToken));
             pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
         }
-        
+        IApePair pair = IApePair(pairAddress);
+
+        // Transfer tokens from IAZO contract to pair
         _baseToken.safeTransferFrom(msg.sender, pairAddress, _baseAmount);
         _saleToken.safeTransferFrom(msg.sender, pairAddress, _saleAmount);
-
-        IApePair(pairAddress).mint(address(this));
-        uint256 totalLPTokensMinted = IApePair(pairAddress).balanceOf(address(this));
+        // Mint lp tokens
+        pair.mint(address(this));
+        uint256 totalLPTokensMinted = pair.balanceOf(address(this));
         require(totalLPTokensMinted != 0 , "LP creation failed");
 
+        // Setup token timelock
         IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(IAZO_SETTINGS, _withdrawer, _unlock_date, true);
-        IApePair(pairAddress).approve(address(iazoTokenTimelock), totalLPTokensMinted);
-        iazoTokenTimelock.deposit(pair, totalLPTokensMinted);
+        require(iazoTokenTimelock.isIAZOTokenTimelock(), 'token timelock did not deploy correctly');
+        require(iazoTokenTimelock.isBeneficiary(_withdrawer), 'improper beneficiary set');
+        // Transfer lp tokens into token timelock
+        pair.approve(address(iazoTokenTimelock), totalLPTokensMinted);
+        iazoTokenTimelock.deposit(IERC20(address(pair)), totalLPTokensMinted);
+        // Add token timelock to exposer
         IAZO_EXPOSER.addTokenTimelock(_iazoAddress, address(iazoTokenTimelock));
         emit IAZOLiquidityLocked(msg.sender, iazoTokenTimelock, pairAddress, totalLPTokensMinted);
 

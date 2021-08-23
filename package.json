@@ -8,7 +8,10 @@
     },
     "scripts": {
         "test": "yarn run compile && yarn mocha --exit --timeout 10000",
-        "tt": "yarn run compile && yarn mocha --exit --timeout 10000 && npm run coverage && rm -rf ./coverage && rm -rf ./coverage.json",
+        "test2": "npm run compile && npx mocha --exit --timeout 10000",
+        "test-ci": "yarn test",
+        "coverage": "node ./coverage.js",
+        "coverage:clean": "rm -rf ./coverage && rm -rf ./coverage.json",
         "compile": "truffle compile",
         "migrate:dev": "truffle migrate --network development",
         "size": "yarn compile && truffle run contract-size"
@@ -22,6 +25,7 @@
         "chai": "^4.3.4",
         "chai-bignumber": "^3.0.0",
         "dotenv": "^10.0.0",
+        "solidity-coverage": "^0.7.16",
         "truffle": "^5.3.12",
         "truffle-assertions": "^0.9.2",
         "truffle-contract-size": "^2.0.1",

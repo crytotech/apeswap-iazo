@@ -5,6 +5,12 @@
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+### Solidity 
+coverage.json
+coverage/
+
+
 ### Eclipse template
 
 .metadata

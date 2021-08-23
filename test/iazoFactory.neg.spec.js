@@ -9,7 +9,7 @@ const IAZO = contract.fromArtifact("IAZO");
 const IAZOSettings = contract.fromArtifact("IAZOSettings");
 const IAZOExposer = contract.fromArtifact("IAZOExposer");
 const Banana = contract.fromArtifact("Banana");
-const WNATIVE = contract.fromArtifact("WNativeMock");
+const ERC20Mock = contract.fromArtifact("ERC20Mock");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 
@@ -25,8 +25,8 @@ describe('IAZOFactory - Negative Tests', function () {
     let liquidity = null;
 
     beforeEach(async () => {
-        this.banana = await WNATIVE.new();
-        this.wnative = await WNATIVE.new();
+        this.banana = await ERC20Mock.new();
+        this.baseToken = await ERC20Mock.new();
     });
 
     it("Should set all contract variables", async () => {
@@ -49,7 +49,7 @@ describe('IAZOFactory - Negative Tests', function () {
     it("Should revert iazo creation, exceeds balance", async () => {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1], value: 1000000000000000000 },),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 },),
             'ERC20: transfer amount exceeds balance.'
         );
     });
@@ -57,7 +57,7 @@ describe('IAZOFactory - Negative Tests', function () {
         await this.banana.mint("2000000000000000000000000", { from: accounts[1] });
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1], value: 1000000000000000000 }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
             'ERC20: transfer amount exceeds allowance.'
         );
     });
@@ -65,49 +65,49 @@ describe('IAZOFactory - Negative Tests', function () {
         await this.banana.approve(factory.address, "2000000000000000000000000", { from: accounts[1] });
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1] }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1] }),
             "Fee not met"
         );
     });
     it("Should revert iazo creation, start iazo past current time", async () => {
         const iazoStartTime = (await time.latest()) - 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1], value: 1000000000000000000 }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
             "iazo should start in future"
         );
     });
     it("Should revert iazo creation, iazo not long enough", async () => {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 200, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1], value: 1000000000000000000 }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 200, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
             "iazo length not long enough"
         );
     });
     it("Should revert iazo creation, iazo too long", async () => {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 1814001, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1], value: 1000000000000000000 }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 1814001, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
             "Exceeds max iazo length"
         );
     });
     it("Should revert iazo creation, amount not enough", async () => {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "999", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1], value: 1000000000000000000 }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "999", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
             "Minimum divisibility"
         );
     });
     it("Should revert iazo creation, invalid token price", async () => {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["0", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 30, 0], { from: accounts[1], value: 1000000000000000000 }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["0", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
             "Invalid token price"
         );
     });
     it("Should revert iazo creation, percentage liquidity too low", async () => {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
-            factory.createIAZO(accounts[1], this.banana.address, this.wnative.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 29, 0], { from: accounts[1], value: 1000000000000000000 }),
+            factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, true, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 299, 0], { from: accounts[1], value: 1000000000000000000 }),
             "Liquidity percentage too low"
         );
     });
