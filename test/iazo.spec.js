@@ -175,6 +175,10 @@ describe('IAZO', function () {
         );
     });
 
+    it("Should not be able to add liquidity before IAZO is over", async () => {
+        await expectRevert(currentIazo.addLiquidity(), "IAZO failed or still in progress");
+    });
+
     it("Users should be able to buy IAZO tokens", async () => {
         await baseToken.mint("400000000000000000", { from: alice });
         await baseToken.approve(currentIazo.address, "400000000000000000", { from: alice });
@@ -242,11 +246,14 @@ describe('IAZO', function () {
 
     let baseTokenBalance = null;
 
-    it("Should add liquidity", async () => {
-        baseTokenBalance = await baseToken.balanceOf(carol);
-        await currentIazo.addLiquidity();
+    it("Should add liquidity and be able to withdraw bought tokens", async () => {
+        // NOTE: Can call this function publicly after the IAZO, but testing withdraw
+        // await currentIazo.addLiquidity();
+        await currentIazo.userWithdraw({ from: alice });
+        const balanceAfterReceivedTokens = await banana.balanceOf(alice)
+
+        // Test LP generation on initial withdraw 
         status = await currentIazo.STATUS.call();
-        
         assert.equal(
             status.LP_GENERATION_COMPLETE,
             true,
@@ -257,11 +264,6 @@ describe('IAZO', function () {
             false,
             "force failed invalid"
         );
-    });
-
-    it("Should be able to withdraw bought tokens", async () => {
-        await currentIazo.userWithdraw({ from: alice });
-        const balanceAfterReceivedTokens = await banana.balanceOf(alice)
 
 
         const buyerInfo = await currentIazo.BUYERS.call(alice);
