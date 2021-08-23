@@ -5,9 +5,11 @@ const { getNetworkConfig } = require("../deploy-config");
 
 const ApeFactoryBuild = require('../build-apeswap-dex/contracts/ApeFactory.json');
 const ApeFactory = contract.fromABI(ApeFactoryBuild.abi, ApeFactoryBuild.bytecode);
+const WNativeBuild = require('../build-apeswap-dex/contracts/WNative.json');
+const WNative = contract.fromABI(WNativeBuild.abi, WNativeBuild.bytecode);
 
 // Load compiled artifacts
-const WNativeMock = contract.fromArtifact("WNativeMock");
+const ERC20Mock = contract.fromArtifact("ERC20Mock");
 const IAZOFactory = contract.fromArtifact("IAZOFactory");
 const IAZO = contract.fromArtifact("IAZO");
 const IAZOSettings = contract.fromArtifact("IAZOSettings");
@@ -18,13 +20,12 @@ const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 
 describe('IAZO', function () {
     const [minter, proxyAdmin, adminAddress, feeToSetter, feeAddress, alice, bob, carol, dan] = accounts;
-    // TODO: Need a mock wNative token
     const { wNative } = getNetworkConfig('development', accounts)
 
     let dexFactory = null;
     let iazoFactory = null;
     let banana = null;
-    let wnative = null;
+    let baseToken = null;
     let settings = null;
     let exposer = null;
     let baseIazo = null;
@@ -32,8 +33,8 @@ describe('IAZO', function () {
     let liquidityLocker = null;
 
     it("Should set all contract variables", async () => {
-        banana = await WNativeMock.new();
-        wnative = await WNativeMock.new();  
+        banana = await ERC20Mock.new();
+        baseToken = await ERC20Mock.new();  
         baseIazo = await IAZO.new();
         exposer = await IAZOExposer.new();
         await exposer.transferOwnership(adminAddress);
@@ -88,7 +89,7 @@ describe('IAZO', function () {
         await iazoFactory.createIAZO(
             carol, 
             banana.address, 
-            wnative.address, 
+            baseToken.address, 
             true, 
             false, 
             [
@@ -175,8 +176,8 @@ describe('IAZO', function () {
     });
 
     it("Users should be able to buy IAZO tokens", async () => {
-        await wnative.mint("400000000000000000", { from: alice });
-        await wnative.approve(currentIazo.address, "400000000000000000", { from: alice });
+        await baseToken.mint("400000000000000000", { from: alice });
+        await baseToken.approve(currentIazo.address, "400000000000000000", { from: alice });
         await currentIazo.userDeposit("400000000000000000", { from: alice });
 
         const buyerInfo = await currentIazo.BUYERS.call(alice);
@@ -193,8 +194,8 @@ describe('IAZO', function () {
     });
 
     it("Users should be able to buy limited IAZO tokens", async () => {
-        await wnative.mint("10000000000000000", { from: bob });
-        await wnative.approve(currentIazo.address, "10000000000000000", { from: bob });
+        await baseToken.mint("10000000000000000", { from: bob });
+        await baseToken.approve(currentIazo.address, "10000000000000000", { from: bob });
         await currentIazo.userDeposit("10000000000000000", { from: bob });
 
         const buyerInfo = await currentIazo.BUYERS.call(bob);
@@ -211,8 +212,8 @@ describe('IAZO', function () {
     });
 
     it("Users should be able to buy IAZO tokens but not more than hardcap", async () => {
-        await wnative.mint("12100000000000000000", { from: dan });
-        await wnative.approve(currentIazo.address, "12100000000000000000", { from: dan });
+        await baseToken.mint("12100000000000000000", { from: dan });
+        await baseToken.approve(currentIazo.address, "12100000000000000000", { from: dan });
         await currentIazo.userDeposit("12100000000000000000", { from: dan });
 
         buyerInfo = await currentIazo.BUYERS.call(dan);
@@ -239,10 +240,10 @@ describe('IAZO', function () {
     });
 
 
-    let wnativeBalance = null;
+    let baseTokenBalance = null;
 
     it("Should add liquidity", async () => {
-        wnativeBalance = await wnative.balanceOf(carol);
+        baseTokenBalance = await baseToken.balanceOf(carol);
         await currentIazo.addLiquidity();
         status = await currentIazo.STATUS.call();
         
@@ -296,7 +297,7 @@ describe('IAZO', function () {
 
     //What to do with these 2 allowance tests
     it("Should approve locker to spend base token", async () => {
-        const allowance = await wnative.allowance(currentIazo.address, liquidityLocker.address);
+        const allowance = await baseToken.allowance(currentIazo.address, liquidityLocker.address);
 
         assert.equal(
             allowance,
@@ -316,10 +317,10 @@ describe('IAZO', function () {
     });
 
     it("transfer base to iazo owner", async () => {
-        newWnativeBalance = await wnative.balanceOf(carol);
+        newWnativeBalance = await baseToken.balanceOf(carol);
 
         assert.equal(
-            newWnativeBalance - wnativeBalance,
+            newWnativeBalance - baseTokenBalance,
             "1470000000000000000",
             "wrong balance"
         );

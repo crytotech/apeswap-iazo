@@ -82,7 +82,7 @@
 exposer = await IAZOExposer.deployed();
 settings = await IAZOSettings.deployed();
 banana = await Banana.deployed();
-wnative = await WNativeMock.deployed();
+wnative = await ERC20Mock.deployed();
 admin = await ProxyAdmin.deployed();
 
 blocknumber = await web3.eth.getBlockNumber();

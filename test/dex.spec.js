@@ -11,7 +11,7 @@ const ApePair = contract.fromABI(ApePairBuild.abi, ApePairBuild.bytecode);
 
 
 // Load compiled artifacts
-const WNativeMock = contract.fromArtifact("WNativeMock");
+const ERC20Mock = contract.fromArtifact("ERC20Mock");
 
 
 describe('DEX', async function () {
@@ -28,11 +28,11 @@ describe('DEX', async function () {
         // Deploy DEX factory
         dexFactory = await ApeFactory.new(feeToSetter, {from: minter});
         // Setup token0
-        token0 = await WNativeMock.new({from: minter});
+        token0 = await ERC20Mock.new({from: minter});
         await token0.mint(startingBalance, {from: alice})
         await token0.mint(startingBalance, {from: bob})
         // Setup token1
-        token1 = await WNativeMock.new({from:minter}); 
+        token1 = await ERC20Mock.new({from:minter}); 
         await token1.mint(startingBalance, {from: alice})
         await token1.mint(startingBalance, {from: bob})
         // Create an initial pair

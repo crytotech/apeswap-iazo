@@ -9,7 +9,7 @@ const IAZO = contract.fromArtifact("IAZO");
 const IAZOSettings = contract.fromArtifact("IAZOSettings");
 const IAZOExposer = contract.fromArtifact("IAZOExposer");
 const Banana = contract.fromArtifact("Banana");
-const WNATIVE = contract.fromArtifact("WNativeMock");
+const ERC20Mock = contract.fromArtifact("ERC20Mock");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 
@@ -20,7 +20,7 @@ describe("IAZO - Negative Tests", async function() {
 
     let factory = null;
     let banana = null;
-    let wnative = null;
+    let baseToken = null;
     let settings = null;
     let exposer = null;
     let iazo = null;
@@ -28,8 +28,8 @@ describe("IAZO - Negative Tests", async function() {
     let liquidity = null;
 
     it("Should set all contract variables", async () => {
-        banana = await WNATIVE.new();
-        wnative = await WNATIVE.new();
+        banana = await ERC20Mock.new();
+        baseToken = await ERC20Mock.new();
         iazo = await IAZO.new();
         exposer = await IAZOExposer.new();
         await exposer.transferOwnership(adminAddress);
@@ -58,7 +58,7 @@ describe("IAZO - Negative Tests", async function() {
         await factory.createIAZO(
             accounts[1], 
             banana.address, 
-            wnative.address, 
+            baseToken.address, 
             true, 
             false, 
             [

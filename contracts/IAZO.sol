@@ -93,7 +93,7 @@ contract IAZO is Initializable {
     // contracts
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
-    IWNative WNATIVE;
+    IWNative ERC20Mock;
     /// @dev reference variable
     address public IAZO_FACTORY;
     // addresses
@@ -115,7 +115,7 @@ contract IAZO is Initializable {
         IWNative _wnative
     ) external initializer {
         IAZO_FACTORY = msg.sender;
-        WNATIVE = _wnative;
+        ERC20Mock = _wnative;
 
         IAZO_SETTINGS = IIAZOSettings(_addresses[0]);
         IAZO_LIQUIDITY_LOCKER = IIAZOLiquidityLocker(_addresses[1]);
@@ -123,7 +123,7 @@ contract IAZO is Initializable {
         IAZO_INFO.IAZO_OWNER = _addressesPayable[0]; // User which created the IAZO
         FEE_INFO.FEE_ADDRESS = _addressesPayable[1];
 
-        IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_ERC20s[1]) == address(WNATIVE) ? true : false;
+        IAZO_INFO.IAZO_SALE_IN_NATIVE = address(_ERC20s[1]) == address(ERC20Mock) ? true : false;
         IAZO_INFO.TOKEN_PRICE = _uint256s[0]; // Price of time in base currency
         IAZO_INFO.AMOUNT = _uint256s[1]; // Amount of tokens for sale
         IAZO_INFO.HARDCAP = _uint256s[2]; // Hardcap base token to collect (TOKEN_PRICE * AMOUNT)
@@ -316,9 +316,9 @@ contract IAZO is Initializable {
             // base token liquidity
             uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
             
-            // deposit NATIVE to recieve WNATIVE tokens
+            // deposit NATIVE to recieve ERC20Mock tokens
             if (IAZO_INFO.IAZO_SALE_IN_NATIVE) {
-                WNATIVE.deposit{value : baseLiquidity}();
+                ERC20Mock.deposit{value : baseLiquidity}();
             }
 
             IAZO_INFO.BASE_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), baseLiquidity);
