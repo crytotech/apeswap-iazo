@@ -4,6 +4,7 @@ const IAZOExposer = artifacts.require("IAZOExposer");
 const IAZO = artifacts.require("IAZO");
 const IAZOLiquidityLocker = artifacts.require("IAZOLiquidityLocker");
 const IAZOUpgradeProxy = artifacts.require("IAZOUpgradeProxy");
+const IAZOTokenTimelock = artifacts.require("IAZOTokenTimelock");
 
 const { getNetworkConfig } = require("../deploy-config");
 
@@ -17,7 +18,8 @@ module.exports = async function (deployer, network, accounts) {
   await iazoExposer.transferOwnership(adminAddress);
 
   await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
-
+  // Deploy dummy token timelock for verification purposes
+  await deployer.deploy(IAZOTokenTimelock, '0x000000000000000000000000000000000000dead', '0x000000000000000000000000000000000000dead', 0, 0);
   await deployer.deploy(IAZOLiquidityLocker);
 
   const abiEncodeDataLiquidityLocker = web3.eth.abi.encodeFunctionCall(

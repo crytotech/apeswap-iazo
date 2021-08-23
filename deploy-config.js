@@ -14,7 +14,7 @@ function getNetworkConfig(network, accounts) {
             wNative: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
             apeFactory: '0x0841BD0B734E4F5853f0dD8d7Ea041c241fb0Da6',
         }
-    } else if (['testnet', 'testnet-fork'].includes(network)) {
+    } else if (['bsc-testnet', 'bsc-testnet-fork'].includes(network)) {
         console.log(`Deploying with BSC testnet config.`)
         return {
             proxyAdminAddress: '0x56Cb8F9199A8F43933cAE300Ef548dfA4ADE7Da0',
