@@ -1,5 +1,5 @@
-const ILOFabric = artifacts.require("ILOFabric");
+const Migrations = artifacts.require("Migrations");
 
 module.exports = function (deployer) {
-  deployer.deploy(ILOFabric);
+  deployer.deploy(Migrations);
 };

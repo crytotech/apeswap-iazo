@@ -18,11 +18,11 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+ const HDWalletProvider = require('@truffle/hdwallet-provider');
+ require('dotenv').config();
+ 
+ const MAINNET_DEPLOYER_KEY = process.env.MAINNET_DEPLOYER_KEY;
+ const TESTNET_DEPLOYER_KEY = process.env.TESTNET_DEPLOYER_KEY;
 
 module.exports = {
   /**
@@ -44,8 +44,23 @@ module.exports = {
     //
     development: {
       host: "127.0.0.1",     // Localhost (default: none)
-      port: 7545,           // Standard Ethereum port (default: none)
+      port: 8545,           // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
+      gas: 6721975
+    },
+    bsc: {
+      provider: () => new HDWalletProvider(MAINNET_DEPLOYER_KEY, `https://bsc-dataseed1.binance.org`),
+      network_id: 56,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: false
+    },
+    "bsc-testnet": {
+      provider: () => new HDWalletProvider(TESTNET_DEPLOYER_KEY, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      network_id: 97,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
     },
     // Another network with more advanced options...
     // advanced: {
@@ -78,17 +93,27 @@ module.exports = {
   mocha: {
     // timeout: 100000
   },
-
+  plugins: [
+    'truffle-plugin-verify',
+    'truffle-contract-size'
+  ],
+  api_keys: {
+    etherscan: process.env.ETHERSCAN_API_KEY,
+    bscscan: process.env.BSCSCAN_API_KEY,
+    hecoinfo: process.env.HECOINFO_API_KEY,
+    ftmscan: process.env.FTMSCAN_API_KEY,
+    polygonscan: process.env.POLYGONSCAN_API_KEY,
+  },
   // Configure your compilers
   compilers: {
     solc: {
-      version: "^0.8.4",    // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.8.6",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
-      //  optimizer: {
-      //    enabled: false,
-      //    runs: 200
-      //  },
+       optimizer: {
+         enabled: true,
+         runs: 200
+       },
       //  evmVersion: "byzantium"
       // }
     }

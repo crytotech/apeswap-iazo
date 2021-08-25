@@ -1,32 +1,48 @@
 {
-    "name": "ilo",
+    "name": "iazo",
     "version": "1.0.0",
-    "description": "\"# ILO\"",
+    "description": "Initial Ape Zone Offering - Self serve initial token offering contracts",
     "main": "truffle-config.js",
     "directories": {
-        "example": "example",
         "test": "test"
     },
-    "dependencies": {
-        "@openzeppelin/contracts": "^4.1.0",
-        "bignumber.js": "^9.0.1",
-        "truffle-assertions": "^0.9.2"
+    "scripts": {
+        "test": "yarn run compile && yarn mocha --exit --timeout 10000",
+        "test2": "npm run compile && npx mocha --exit --timeout 10000",
+        "test-ci": "yarn test",
+        "coverage": "node ./coverage.js",
+        "coverage:clean": "rm -rf ./coverage && rm -rf ./coverage.json",
+        "compile": "truffle compile",
+        "migrate:dev": "truffle migrate --network development",
+        "migrate:bsc-testnet": "truffle migrate --network bsc-testnet",
+        "migrate:bsc": "truffle migrate --network bsc",
+        "verify:bsc-testnet": "truffle run verify IAZO --network bsc-testnet && truffle run verify IAZOFactory --network bsc-testnet && truffle run verify IAZOLiquidityLocker --network bsc-testnet && truffle run verify IAZOSettings --network bsc-testnet && truffle run verify IAZOUpgradeProxy --network bsc-testnet  && truffle run verify IAZOTokenTimelock --network bsc-testnet",
+        "verify:bsc": "truffle run verify IAZO --network bsc && truffle run verify IAZOFactory --network bsc && truffle run verify IAZOLiquidityLocker --network bsc && truffle run verify IAZOSettings --network bsc && truffle run verify IAZOUpgradeProxy --network bsc  && truffle run verify IAZOTokenTimelock --network bsc",
+        "size": "yarn compile && truffle run contract-size"
     },
     "devDependencies": {
+        "@openzeppelin/contracts": "^4.1.0",
+        "@openzeppelin/test-environment": "^0.1.9",
+        "@openzeppelin/test-helpers": "^0.5.13",
+        "@truffle/hdwallet-provider": "^1.4.1",
+        "bignumber.js": "^9.0.1",
         "chai": "^4.3.4",
-        "chai-bignumber": "^3.0.0"
-    },
-    "scripts": {
-        "test": "truffle test"
+        "chai-bignumber": "^3.0.0",
+        "dotenv": "^10.0.0",
+        "solidity-coverage": "^0.7.16",
+        "truffle": "^5.3.12",
+        "truffle-assertions": "^0.9.2",
+        "truffle-contract-size": "^2.0.1",
+        "truffle-plugin-verify": "^0.5.11"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/Doublo54/ILO.git"
+        "url": "git+https://github.com/ApeSwapFinance/apeswap-iazo.git"
     },
     "author": "",
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/Doublo54/ILO/issues"
+        "url": "https://github.com/ApeSwapFinance/apeswap-iazo/issues"
     },
-    "homepage": "https://github.com/Doublo54/ILO#readme"
+    "homepage": "https://github.com/ApeSwapFinance/apeswap-iazo#readme"
 }
