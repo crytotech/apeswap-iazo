@@ -14,6 +14,9 @@ pragma solidity 0.8.6;
  * GitHub:          https://github.com/ApeSwapFinance
  */
 
+/// @title IAZO settings
+/// @author ApeSwapFinance
+/// @notice Settings for new IAZOs
 contract IAZOSettings {
 
     struct Settings {

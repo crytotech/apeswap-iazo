@@ -84,6 +84,9 @@ interface IApePair {
     function initialize(address, address) external;
 }
 
+/// @title IAZO Liquidity Locker
+/// @author ApeSwapFinance
+/// @notice Locks liquidity on succesful IAZO
 contract IAZOLiquidityLocker is OwnableProxy, Initializable {
     using SafeERC20 for IERC20;
 
@@ -118,6 +121,10 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
         As anyone can create a pair, and send WETH to it while a IAZO is running, but no one should have access to the IAZO token. If they do and they send it to 
         the pair, scewing the initial liquidity, this function will return true
     */
+    /// @notice Check if the token pair is initialised or not
+    /// @param _iazoToken The address of the IAZO token
+    /// @param _baseToken The address of the base token
+    /// @return Whether the token pair is initialised or not
     function apePairIsInitialised(address _iazoToken, address _baseToken) public view returns (bool) {
         address pairAddress = APE_FACTORY.getPair(_iazoToken, _baseToken);
         if (pairAddress == address(0)) {
@@ -130,6 +137,15 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
         return false;
     }
     
+    /// @notice Lock the liquidity of sale and base tokens
+    /// @param _baseToken The address of the base token
+    /// @param _saleToken The address of the IAZO token
+    /// @param _baseAmount The amount of base tokens to lock as liquidity
+    /// @param _saleAmount The amount of IAZO tokens to lock as liquidity
+    /// @param _unlock_date The date where the liquidity can be unlocked
+    /// @param _withdrawer The address which can withdraw the liquidity after unlocked
+    /// @param _iazoAddress The address of the IAZO
+    /// @return The address of liquidity pair
     function lockLiquidity(
         IERC20 _baseToken, 
         IERC20 _saleToken, 

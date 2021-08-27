@@ -18,6 +18,9 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/// @title IAZO exposer 
+/// @author ApeSwapFinance
+/// @notice Keeps track of all created IAZOs and exposes to outside world
 contract IAZOExposer is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -38,6 +41,9 @@ contract IAZOExposer is Ownable {
     event IAZOTimelockAdded(address indexed IAZOContract, address indexed TimelockContract);
     event LogInit();
 
+    /// @notice Initialization of exposer
+    /// @param _iazoFactory The address of the IAZO factory
+    /// @param _liquidityLocker The address of the liquidity locker
     function initializeExposer(address _iazoFactory, address _liquidityLocker) external {
         require(!initialized, "already initialized");
         IAZO_FACTORY = _iazoFactory;
@@ -46,6 +52,8 @@ contract IAZOExposer is Ownable {
         emit LogInit();
     }
 
+    /// @notice Registers new IAZO address
+    /// @param _iazoAddress The address of the IAZO
     function registerIAZO(address _iazoAddress) external {
         require(initialized, "not initialized");
         require(msg.sender == IAZO_FACTORY, "Forbidden");
@@ -57,6 +65,9 @@ contract IAZOExposer is Ownable {
         }
     }
 
+    /// @notice Check for IAZO registration
+    /// @param _iazoAddress The address of the IAZO
+    /// @return Whether the IAZO is registered or not
     function IAZOIsRegistered(address _iazoAddress)
         external
         view
@@ -65,6 +76,9 @@ contract IAZOExposer is Ownable {
         return IAZOs.contains(_iazoAddress);
     }
     
+    /// @notice Registers token timelock address and links with corresponding IAZO
+    /// @param _iazoAddress The address of the IAZO
+    /// @param _iazoTokenTimelock The address of the token timelock
     function addTokenTimelock(address _iazoAddress, address _iazoTokenTimelock) external {
         require(initialized, "not initialized");
         require(msg.sender == IAZO_LIQUIDITY_LOCKER, "Forbidden");
@@ -73,15 +87,23 @@ contract IAZOExposer is Ownable {
         emit IAZOTimelockAdded(_iazoAddress, _iazoTokenTimelock);
     }
 
+    /// @notice Returns the token timelock address based on IAZO address
+    /// @param _iazoAddress The address of the IAZO
+    /// @return Token timelock address
     function getTokenTimelock(address _iazoAddress) external view returns (address){
         require(IAZOAddressToTokenTimelockAddress[_iazoAddress] != address(0), "No TokenTimelock found");
         return IAZOAddressToTokenTimelockAddress[_iazoAddress];
     }
 
+    /// @notice Returns the IAZO based on index of creation
+    /// @param _index index of IAZO to be returned
+    /// @return IAZO address
     function IAZOAtIndex(uint256 _index) external view returns (address) {
         return IAZOs.at(_index);
     }
 
+    /// @notice Amount of IAZOs created total
+    /// @return Amount of IAZOs created total
     function IAZOsLength() public view returns (uint256) {
         return IAZOs.length();
     }
