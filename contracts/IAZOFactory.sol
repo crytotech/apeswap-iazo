@@ -219,8 +219,9 @@ contract IAZOFactory is OwnableProxy, Initializable {
         uint256 _amount, 
         uint256 _tokenPrice, 
         uint256 _decimals
-    ) public pure returns (uint256 hardcap) {
-        hardcap = _amount * _tokenPrice / (10 ** _decimals);
+    ) public pure returns (uint256) {
+        uint256 hardcap = _amount * _tokenPrice / (10 ** _decimals);
+        return hardcap;
     }
 
     /// @notice Check for how many tokens are required for the IAZO including token sale and liquidity.
