@@ -26,7 +26,9 @@ import "./interface/IIAZOLiquidityLocker.sol";
 /**
  *  Welcome to the "Initial Ape Zone Offering" (IAZO) contract
  */
-
+/// @title IAZO
+/// @author ApeSwapFinance
+/// @notice IAZO contract where to buy the tokens from
 contract IAZO is Initializable {
     using SafeERC20 for ERC20;
 
@@ -106,6 +108,7 @@ contract IAZO is Initializable {
     // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startTime, _activeTime, _lockPeriod, _baseFee]
     // _bools = [_prepaidFee, _burnRemains]
     // _ERC20s = [_iazoToken, _baseToken]
+    /// @notice Initialization of IAZO
     function initialize(
         address[2] memory _addresses, 
         address payable[2] memory _addressesPayable, 
@@ -161,6 +164,8 @@ contract IAZO is Initializable {
         _;
     }
 
+    /// @notice The state of the IAZO
+    /// @return The state of the IAZO
     function getIAZOState() public view returns (uint256) {
         // 4 FAILED - force fail
         if (STATUS.FORCE_FAILED) return 4; 
@@ -176,16 +181,21 @@ contract IAZO is Initializable {
         return 0; 
     }
 
+    /// @notice Buy IAZO tokens with native coin
     function userDepositNative () external payable {
         require(IAZO_INFO.IAZO_SALE_IN_NATIVE, "not a native token IAZO");
         userDepositPrivate(msg.value);
     }
 
+    /// @notice Buy IAZO tokens with base token
+    /// @param _amount Amount of base tokens to use to buy IAZO tokens for
     function userDeposit (uint256 _amount) external {
         require(!IAZO_INFO.IAZO_SALE_IN_NATIVE, "cannot deposit tokens in a native token sale");
         userDepositPrivate(_amount);
     }
 
+    /// @notice Internal function used to buy IAZO tokens in either native coin or base token
+    /// @param _amount Amount of base tokens to use to buy IAZO tokens for
     function userDepositPrivate (uint256 _amount) private {
         // Check that IAZO is in the ACTIVE state for user deposits
         require(getIAZOState() == 1, 'IAZO not active');
@@ -278,7 +288,9 @@ contract IAZO is Initializable {
      * onlyIAZOOwner functions
      */
 
-    // Change start and end of IAZO
+    /// @notice Change start and end of IAZO
+    /// @param _startTime New start time of IAZO
+    /// @param _activeTime New active time of IAZO
     function updateStart(uint256 _startTime, uint256 _activeTime) external onlyIAZOOwner {
         require(IAZO_TIME_INFO.START_TIME > block.timestamp, "IAZO has already started");
         require(_startTime > block.timestamp, "Start time must be in future");
@@ -291,13 +303,15 @@ contract IAZO is Initializable {
         emit UpdateIAZOBlocks(previousStartTime, IAZO_TIME_INFO.START_TIME, previousActiveTime, IAZO_TIME_INFO.ACTIVE_TIME);
     }
 
+    /// @notice Change the max spend limit for a buyer
+    /// @param _maxSpend New spend limit
     function updateMaxSpendLimit(uint256 _maxSpend) external onlyIAZOOwner {
         uint256 previousMaxSpend = IAZO_INFO.MAX_SPEND_PER_BUYER;
         IAZO_INFO.MAX_SPEND_PER_BUYER = _maxSpend;
         emit UpdateMaxSpendLimit(previousMaxSpend, IAZO_INFO.MAX_SPEND_PER_BUYER);
     }
 
-    // final step when iazo is successfull. lock liquidity and enable withdrawals of sale token.
+    /// @notice Final step when IAZO is successfull. lock liquidity and enable withdrawals of sale token.
     function addLiquidity() public { 
         require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');
         uint256 currentIAZOState = getIAZOState();

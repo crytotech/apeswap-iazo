@@ -18,6 +18,7 @@
         "migrate:bsc": "truffle migrate --network bsc",
         "verify:bsc-testnet": "truffle run verify IAZO --network bsc-testnet && truffle run verify IAZOFactory --network bsc-testnet && truffle run verify IAZOLiquidityLocker --network bsc-testnet && truffle run verify IAZOSettings --network bsc-testnet && truffle run verify IAZOUpgradeProxy --network bsc-testnet  && truffle run verify IAZOTokenTimelock --network bsc-testnet",
         "verify:bsc": "truffle run verify IAZO --network bsc && truffle run verify IAZOFactory --network bsc && truffle run verify IAZOLiquidityLocker --network bsc && truffle run verify IAZOSettings --network bsc && truffle run verify IAZOUpgradeProxy --network bsc  && truffle run verify IAZOTokenTimelock --network bsc",
+        "gen:docs": "solidity-docgen --solc-module solc",
         "size": "yarn compile && truffle run contract-size"
     },
     "devDependencies": {
@@ -29,8 +30,10 @@
         "chai": "^4.3.4",
         "chai-bignumber": "^3.0.0",
         "dotenv": "^10.0.0",
+        "solc": "0.8.6",
         "solidity-coverage": "^0.7.16",
-        "truffle": "^5.3.12",
+        "solidity-docgen": "^0.5.13",
+        "truffle": "^5.4.8",
         "truffle-assertions": "^0.9.2",
         "truffle-contract-size": "^2.0.1",
         "truffle-plugin-verify": "^0.5.11"
