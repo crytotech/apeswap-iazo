@@ -25,6 +25,8 @@ contract IAZOSettings {
         address BURN_ADDRESS;
         uint256 BASE_FEE; // base fee percentage
         uint256 MAX_BASE_FEE; // max base fee percentage
+        uint256 IAZO_TOKEN_FEE; // base fee percentage
+        uint256 MAX_IAZO_TOKEN_FEE; // max base fee percentage
         uint256 NATIVE_CREATION_FEE; // fee to generate a IAZO contract on the platform
         uint256 MIN_IAZO_LENGTH; // minimum iazo active seconds
         uint256 MAX_IAZO_LENGTH; // maximum iazo active seconds
@@ -33,7 +35,7 @@ contract IAZOSettings {
 
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
     event UpdateFeeAddress(address indexed previousFeeAddress, address indexed newFeeAddress);
-    event UpdateFees(uint256 previousBaseFee, uint256 newBaseFee, uint256 previousETHFee, uint256 newETHFee);
+    event UpdateFees(uint256 previousBaseFee, uint256 newBaseFee, uint256 previousIAZOTokenFee, uint256 newIAZOTokenFee, uint256 previousETHFee, uint256 newETHFee);
     event UpdateMinIAZOLength(uint256 previousMinLength, uint256 newMinLength);
     event UpdateMaxIAZOLength(uint256 previousMaxLength, uint256 newMaxLength);
     event UpdateMinLockPeriod(uint256 previousMinLockPeriod, uint256 newMinLockPeriod);
@@ -47,6 +49,8 @@ contract IAZOSettings {
         SETTINGS.ADMIN_ADDRESS = admin;
         SETTINGS.BASE_FEE = 50; // 5% (divided by 1000)
         SETTINGS.MAX_BASE_FEE = 300; // max base fee percentage - 30% (divided by 1000)
+        SETTINGS.IAZO_TOKEN_FEE = 50; // 5% (divided by 1000)
+        SETTINGS.MAX_IAZO_TOKEN_FEE = 300; // max iazo fee percentage - 30% (divided by 1000)
         SETTINGS.NATIVE_CREATION_FEE = 1e18;
         SETTINGS.FEE_ADDRESS = payable(feeAddress);
         SETTINGS.MIN_IAZO_LENGTH = 43200; // 12 hrs (in seconds)
@@ -83,8 +87,16 @@ contract IAZOSettings {
         return SETTINGS.BASE_FEE;
     }
 
+    function getIAZOTokenFee() external view returns (uint256) {
+        return SETTINGS.IAZO_TOKEN_FEE;
+    }
+
     function getMaxBaseFee() external view returns (uint256) {
         return SETTINGS.MAX_BASE_FEE;
+    }
+
+    function getMaxIAZOTokenFee() external view returns (uint256) {
+        return SETTINGS.MAX_IAZO_TOKEN_FEE;
     }
     
     function getNativeCreationFee() external view returns (uint256) {
@@ -115,14 +127,18 @@ contract IAZOSettings {
         emit UpdateFeeAddress(previousFeeAddress, SETTINGS.FEE_ADDRESS);
     }
     
-    function setFees(uint256 _baseFee, uint256 _nativeCreationFee) external onlyAdmin {
+    function setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee) external onlyAdmin {
         require(_baseFee <= SETTINGS.MAX_BASE_FEE, "base fee over max allowable");
         uint256 previousBaseFee = SETTINGS.BASE_FEE;
         SETTINGS.BASE_FEE = _baseFee;
 
+        require(_iazoTokenFee <= SETTINGS.MAX_IAZO_TOKEN_FEE, "IAZO token fee over max allowable");
+        uint256 previousIAZOTokenFee = SETTINGS.IAZO_TOKEN_FEE;
+        SETTINGS.IAZO_TOKEN_FEE = _iazoTokenFee;
+
         uint256 previousETHFee = SETTINGS.NATIVE_CREATION_FEE;
         SETTINGS.NATIVE_CREATION_FEE = _nativeCreationFee;
-        emit UpdateFees(previousBaseFee, SETTINGS.BASE_FEE, previousETHFee, SETTINGS.NATIVE_CREATION_FEE);
+        emit UpdateFees(previousBaseFee, SETTINGS.BASE_FEE, previousIAZOTokenFee, SETTINGS.IAZO_TOKEN_FEE, previousETHFee, SETTINGS.NATIVE_CREATION_FEE);
     }
 
     function setMaxIAZOLength(uint256 _maxLength) external onlyAdmin {

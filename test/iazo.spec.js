@@ -90,7 +90,6 @@ describe('IAZO', function () {
             carol, 
             banana.address, 
             baseToken.address, 
-            true, 
             false, 
             [
                 IAZOConfig.tokenPrice,

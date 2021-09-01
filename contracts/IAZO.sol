@@ -34,7 +34,7 @@ contract IAZO is Initializable {
 
     event ForceFailed(address indexed by);
     event UpdateMaxSpendLimit(uint256 previousMaxSpend, uint256 newMaxSpend);
-    event BaseFeeCollected(address indexed feeAddress, uint256 baseFeeCollected);
+    event FeesCollected(address indexed feeAddress, uint256 baseFeeCollected, uint256 IAZOTokenFee);
     event UpdateIAZOBlocks(uint256 previousStartTime, uint256 newStartBlock, uint256 previousActiveTime, uint256 newActiveBlocks);
     event AddLiquidity(uint256 baseLiquidity, uint256 saleTokenLiquidity, uint256 remainingBaseBalance);
     event SweepWithdraw(
@@ -53,7 +53,7 @@ contract IAZO is Initializable {
         uint256 HARDCAP; // hardcap of earnings.
         uint256 SOFTCAP; // softcap for earning. if not reached IAZO is cancelled 
         uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
-        uint256 LIQUIDITY_PERCENT; // divided by 1000
+        uint256 LIQUIDITY_PERCENT; // 1 = 0.1%
         uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
         bool BURN_REMAINS;
     }
@@ -81,8 +81,8 @@ contract IAZO is Initializable {
 
     struct FeeInfo {
         address payable FEE_ADDRESS;
-        bool PREPAID_FEE;
-        uint256 BASE_FEE; // divided by 1000
+        uint256 BASE_FEE; // 1 = 0.1%
+        uint256 IAZO_TOKEN_FEE; // 1 = 0.1%
     }
 
     bool constant public isIAZO = true;
@@ -105,15 +105,15 @@ contract IAZO is Initializable {
 
     // _addresses = [IAZOSettings, IAZOLiquidityLocker]
     // _addressesPayable = [IAZOOwner, feeAddress]
-    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startTime, _activeTime, _lockPeriod, _baseFee]
-    // _bools = [_prepaidFee, _burnRemains]
+    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startTime, _activeTime, _lockPeriod, _baseFee, iazoTokenFee]
+    // _bools = [_burnRemains]
     // _ERC20s = [_iazoToken, _baseToken]
     /// @notice Initialization of IAZO
     function initialize(
         address[2] memory _addresses, 
         address payable[2] memory _addressesPayable, 
-        uint256[11] memory _uint256s, 
-        bool[2] memory _bools, 
+        uint256[12] memory _uint256s, 
+        bool[1] memory _bools, 
         ERC20[2] memory _ERC20s, 
         IWNative _wnative
     ) external initializer {
@@ -138,9 +138,9 @@ contract IAZO is Initializable {
         IAZO_TIME_INFO.ACTIVE_TIME = _uint256s[8];
         IAZO_TIME_INFO.LOCK_PERIOD = _uint256s[9];
         FEE_INFO.BASE_FEE = _uint256s[10];
+        FEE_INFO.IAZO_TOKEN_FEE = _uint256s[11];
 
-        FEE_INFO.PREPAID_FEE = _bools[0]; // Fee paid by IAZO creator beforehand
-        IAZO_INFO.BURN_REMAINS = _bools[1]; // Burn remainder of IAZO tokens not sold
+        IAZO_INFO.BURN_REMAINS = _bools[0]; // Burn remainder of IAZO tokens not sold
 
         IAZO_INFO.IAZO_TOKEN = _ERC20s[0]; // Token for sale 
         IAZO_INFO.BASE_TOKEN = _ERC20s[1]; // Token used to buy IAZO token
@@ -324,7 +324,9 @@ contract IAZO is Initializable {
             return;
         }
 
-        uint256 apeswapBaseFee = FEE_INFO.PREPAID_FEE ? 0 : STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
+        //calculate fees
+        uint256 apeswapBaseFee = STATUS.TOTAL_BASE_COLLECTED * FEE_INFO.BASE_FEE / 1000;
+        uint256 apeswapIAZOTokenFee = STATUS.TOTAL_TOKENS_SOLD * FEE_INFO.IAZO_TOKEN_FEE / 1000;
                 
         // base token liquidity
         uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
@@ -351,15 +353,14 @@ contract IAZO is Initializable {
         );
         TOKEN_LOCK_ADDRESS = newTokenLockContract;
 
-        if(!FEE_INFO.PREPAID_FEE)
-        {
-            if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-                FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
-            } else { 
-                IAZO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
-            }
-            emit BaseFeeCollected(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
+
+        if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
+            FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
+        } else { 
+            IAZO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
         }
+        IAZO_INFO.IAZO_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapIAZOTokenFee);
+        emit FeesCollected(FEE_INFO.FEE_ADDRESS, apeswapBaseFee, apeswapIAZOTokenFee);
 
         // send remaining iazo tokens to iazo owner
         uint256 remainingIAZOTokenBalance = IAZO_INFO.IAZO_TOKEN.balanceOf(address(this));

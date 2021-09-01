@@ -8,7 +8,6 @@ const IAZOFactory = contract.fromArtifact("IAZOFactory");
 const IAZO = contract.fromArtifact("IAZO");
 const IAZOSettings = contract.fromArtifact("IAZOSettings");
 const IAZOExposer = contract.fromArtifact("IAZOExposer");
-const Banana = contract.fromArtifact("Banana");
 const ERC20Mock = contract.fromArtifact("ERC20Mock");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
@@ -24,7 +23,6 @@ describe("IAZO - Negative Tests", async function() {
     let settings = null;
     let exposer = null;
     let iazo = null;
-    let admin = null;
     let liquidity = null;
 
     it("Should set all contract variables", async () => {
@@ -40,6 +38,12 @@ describe("IAZO - Negative Tests", async function() {
         liquidity = await IAZOLiquidityLocker.at(liquidityProxy.address);
         await liquidity.initialize(exposer.address, apeFactory, settings.address, adminAddress);
 
+        IAZOFactory.defaults({
+            gasPrice: 0,
+        })
+        IAZOUpgradeProxy.defaults({
+            gasPrice: 0,
+        })
         const factoryContract = await IAZOFactory.new();
         const factoryProxy = await IAZOUpgradeProxy.new(proxyAdmin, factoryContract.address, '0x');
         factory = await IAZOFactory.at(factoryProxy.address);
@@ -59,7 +63,6 @@ describe("IAZO - Negative Tests", async function() {
             accounts[1], 
             banana.address, 
             baseToken.address, 
-            true, 
             false, 
             [
                 "2000000000000000000", // token price

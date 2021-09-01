@@ -31,7 +31,11 @@ interface IIAZOSettings {
 
     function getBaseFee() external view returns (uint256);
 
+    function getIAZOTokenFee() external view returns (uint256);
+    
     function getMaxBaseFee() external view returns (uint256);
+
+    function getMaxIAZOTokenFee() external view returns (uint256);
 
     function getNativeCreationFee() external view returns (uint256);
 
@@ -45,7 +49,7 @@ interface IIAZOSettings {
 
     function setFeeAddresses(address _address) external;
 
-    function setFees(uint256 _baseFee, uint256 _nativeCreationFee) external;
+    function setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee) external;
 
     function setMaxIAZOLength(uint256 _maxLength) external;
 

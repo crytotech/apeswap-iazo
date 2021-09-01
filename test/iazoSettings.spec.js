@@ -60,11 +60,16 @@ describe('IAZOSettingsTest', function () {
             "1000000000000000000",
         );
 
-        await settings.setFees(60, "2000000000000000000", { from: admin });
+        await settings.setFees(60, 50, "2000000000000000000", { from: admin });
         baseFee = await settings.getBaseFee({ from: admin });
         assert.equal(
             baseFee,
             60,
+        );
+        iazoTokenFee = await settings.getIAZOTokenFee({ from: admin });
+        assert.equal(
+            iazoTokenFee,
+            50,
         );
         nativeCreationFee = await settings.getNativeCreationFee({ from: admin });
         assert.equal(
