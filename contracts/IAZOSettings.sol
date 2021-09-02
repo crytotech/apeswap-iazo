@@ -51,7 +51,7 @@ contract IAZOSettings {
         SETTINGS.MAX_BASE_FEE = 300; // max base fee percentage - 30% (divided by 1000)
         SETTINGS.IAZO_TOKEN_FEE = 50; // 5% (divided by 1000)
         SETTINGS.MAX_IAZO_TOKEN_FEE = 300; // max iazo fee percentage - 30% (divided by 1000)
-        SETTINGS.NATIVE_CREATION_FEE = 1e18;
+        SETTINGS.NATIVE_CREATION_FEE = 1e18; // 1 Native tokens
         SETTINGS.FEE_ADDRESS = payable(feeAddress);
         SETTINGS.MIN_IAZO_LENGTH = 43200; // 12 hrs (in seconds)
         SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds) 

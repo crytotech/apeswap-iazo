@@ -12,7 +12,7 @@ Initialization of factory
 
 
 
-### `createIAZO(address payable _IAZOOwner, contract ERC20 _IAZOToken, contract ERC20 _baseToken, bool _prepaidFee, bool _burnRemains, uint256[9] _uint_params)` (public)
+### `createIAZO(address payable _IAZOOwner, contract ERC20 _IAZOToken, contract ERC20 _baseToken, bool _burnRemains, uint256[9] _uint_params)` (public)
 
 Creates new IAZO and adds address to IAZOExposer
 
@@ -33,7 +33,7 @@ Check for how many tokens are required for the IAZO including token sale and liq
 
 
 
-### `getTokensRequiredInternal(uint256 _amount, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _hardcap, uint256 _decimals) → uint256` (internal)
+### `getTokensRequiredInternal(uint256 _amount, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _hardcap, uint256 _decimals, uint256 _IAZOTokenFee) → uint256` (internal)
 
 
 

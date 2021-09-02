@@ -14,7 +14,7 @@ const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 
 
 describe("IAZO - Negative Tests", async function() {
-    const [proxyAdmin, adminAddress] = accounts;
+    const [proxyAdmin, adminAddress, alice] = accounts;
     const { feeAddress, wNative, apeFactory } = getNetworkConfig('development', accounts);
 
     let factory = null;
@@ -56,25 +56,48 @@ describe("IAZO - Negative Tests", async function() {
 
         const startIAZOCount = await exposer.IAZOsLength();
 
-        await banana.mint("2000000000000000000000000", { from: accounts[1] });
-        await banana.approve(factory.address, "2000000000000000000000000", { from: accounts[1] });
+        const iazoDetails = {
+            tokenPrice: '2000000000000000000',
+            amount: '1000000000000000000000000',
+            softCap: '1000000000000000000000',
+            listingPrice: '2000000000000000000',
+            liquidityPercent: '300',
+        }
+
+        const tokensRequired = await factory.getTokensRequired(
+            iazoDetails.amount,
+            iazoDetails.tokenPrice,
+            iazoDetails.listingPrice,
+            iazoDetails.liquidityPercent,
+            18 // decimals
+        )
+
+        // 5% of offer tokens + liquidity + sale tokens
+        assert.equal(
+            tokensRequired.toString(),
+            '1350000000000000000000000',
+            'IAZO get tokens required is not accurate'
+        );
+
+        await banana.mint(tokensRequired, { from: alice });
+        await banana.approve(factory.address, tokensRequired, { from: alice });
         const startTimestamp = (await time.latest()) + 10;
         await factory.createIAZO(
-            accounts[1], 
+            alice, 
             banana.address, 
             baseToken.address, 
             false, 
             [
-                "2000000000000000000", // token price
-                "1000000000000000000000000", // amount
-                "1000000000000000000000", // softcap
+                iazoDetails.tokenPrice, // token price
+                iazoDetails.amount, // amount
+                iazoDetails.softCap, // softcap
                 startTimestamp, // start time
                 43201, // active time
                 2419000, // lock period
                 "2000000000000000000000000", // max spend per buyer
-                "300", // liquidity percent
-                0 // listing price
-            ], { from: accounts[1], value: 1000000000000000000 })
+                iazoDetails.liquidityPercent, // liquidity percent
+                iazoDetails.softCap // listing price
+            ], { from: alice, value: 1000000000000000000 })
 
         //Fee check2
         const newBalance = await balance.current(FeeAddress, unit = 'wei')

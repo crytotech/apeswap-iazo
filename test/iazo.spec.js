@@ -1,4 +1,4 @@
-const { balance, expectRevert, time, ether } = require('@openzeppelin/test-helpers');
+const { balance, expectRevert, time, ether, BN } = require('@openzeppelin/test-helpers');
 const { accounts, contract } = require('@openzeppelin/test-environment');
 const { expect, assert } = require('chai');
 const { getNetworkConfig } = require("../deploy-config");
@@ -86,6 +86,7 @@ describe('IAZO', function () {
             liquidityPercent: "300", // liquidity percent
             listingPrice: ether(".2") // listing price
         }
+
         await iazoFactory.createIAZO(
             carol, 
             banana.address, 
@@ -136,9 +137,10 @@ describe('IAZO', function () {
 
     it("Should receive the iazo token", async () => {
         const balance = await banana.balanceOf(currentIazo.address);
+
         assert.equal(
-            balance.valueOf(),
-            21000000000000000000 + 3150000000000000000, //hardcoded for now because might change the getTokensRequired() function
+            balance.valueOf().toString(),
+            new BN('21000000000000000000').add(new BN('3150000000000000000').add(new BN('1050000000000000000'))), //hardcoded for now because might change the getTokensRequired() function
             "check for received iazo token"
         );
     });
@@ -322,8 +324,11 @@ describe('IAZO', function () {
 
         assert.equal(
             newWnativeBalance - baseTokenBalance,
-            "1470000000000000000",
+            // Default base token fee is 5%
+            new BN("1470000000000000000").mul(new BN('19')).div(new BN('20')),
             "wrong balance"
         );
     });
+
+    // TODO: Verify baseFee, baseTokenFee, and iazoTokenFee are sent to the proper places
 });
