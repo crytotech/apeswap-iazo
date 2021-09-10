@@ -263,7 +263,7 @@ contract IAZO is Initializable {
         uint256 tokensToTransfer = buyer.tokensBought;
         buyer.tokensBought = 0;
         IAZO_INFO.IAZO_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
-       emit UserWithdrawSuccess(msg.sender, tokensToTransfer);
+        emit UserWithdrawSuccess(msg.sender, tokensToTransfer);
     }
 
     function userWithdrawFailedPrivate() private {
@@ -278,8 +278,7 @@ contract IAZO is Initializable {
         } else {
             IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
         }
-       emit UserWithdrawFailed(msg.sender, tokensToTransfer);
-
+        emit UserWithdrawFailed(msg.sender, tokensToTransfer);
     }
 
     /**
@@ -336,7 +335,7 @@ contract IAZO is Initializable {
         uint256 apeswapIAZOTokenFee = STATUS.TOTAL_TOKENS_SOLD * FEE_INFO.IAZO_TOKEN_FEE / 1000;
                 
         // base token liquidity
-        uint256 baseLiquidity = (STATUS.TOTAL_BASE_COLLECTED - apeswapBaseFee) * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
+        uint256 baseLiquidity = STATUS.TOTAL_BASE_COLLECTED  * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
         
         // deposit NATIVE to recieve ERC20Mock tokens
         if (IAZO_INFO.IAZO_SALE_IN_NATIVE) {
@@ -365,9 +364,9 @@ contract IAZO is Initializable {
         if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
             FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
         } else { 
-            IAZO_INFO.BASE_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
+            IAZO_INFO.BASE_TOKEN.safeTransfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
         }
-        IAZO_INFO.IAZO_TOKEN.transfer(FEE_INFO.FEE_ADDRESS, apeswapIAZOTokenFee);
+        IAZO_INFO.IAZO_TOKEN.safeTransfer(FEE_INFO.FEE_ADDRESS, apeswapIAZOTokenFee);
         emit FeesCollected(FEE_INFO.FEE_ADDRESS, apeswapBaseFee, apeswapIAZOTokenFee);
 
         // send remaining iazo tokens to iazo owner

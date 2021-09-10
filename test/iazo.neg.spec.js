@@ -14,7 +14,7 @@ const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 
 
 describe("IAZO - Negative Tests", async function() {
-    const [proxyAdmin, adminAddress, alice] = accounts;
+    const [proxyAdmin, adminAddress, alice, bob] = accounts;
     const { feeAddress, wNative, apeFactory } = getNetworkConfig('development', accounts);
 
     let factory = null;
@@ -24,6 +24,8 @@ describe("IAZO - Negative Tests", async function() {
     let exposer = null;
     let iazo = null;
     let liquidity = null;
+
+    let startTimestamp = null;
 
     it("Should set all contract variables", async () => {
         banana = await ERC20Mock.new();
@@ -81,7 +83,7 @@ describe("IAZO - Negative Tests", async function() {
 
         await banana.mint(tokensRequired, { from: alice });
         await banana.approve(factory.address, tokensRequired, { from: alice });
-        const startTimestamp = (await time.latest()) + 10;
+        startTimestamp = (await time.latest()) + 10;
         await factory.createIAZO(
             alice, 
             banana.address, 
@@ -127,6 +129,35 @@ describe("IAZO - Negative Tests", async function() {
         );
     });
 
+    it("iazo status should be in progress when start time is reached", async () => {
+        time.increaseTo(startTimestamp);
+
+        iazoStatus = await iazo.getIAZOState();
+        assert.equal(
+            iazoStatus,
+            1,
+            "iazo should now be active"
+        );
+    });
+
+    it("Users should be able to buy IAZO tokens", async () => {
+        await baseToken.mint("400000000000000000", { from: bob });
+        await baseToken.approve(iazo.address, "400000000000000000", { from: bob });
+        await iazo.userDeposit("400000000000000000", { from: bob });
+
+        const buyerInfo = await iazo.BUYERS.call(bob);
+        assert.equal(
+            buyerInfo.deposited,
+            "400000000000000000",
+            "account deposited check"
+        );
+        assert.equal(
+            buyerInfo.tokensBought,
+            "200000000000000000",
+            "account bought check"
+        );
+    });
+
     it("iazo status should be failed", async () => {
         await iazo.forceFailAdmin({ from: adminAddress });
         const iazoStatus = await iazo.getIAZOState();
@@ -134,6 +165,18 @@ describe("IAZO - Negative Tests", async function() {
             iazoStatus,
             4,
             "start status should be 4"
+        );
+    });
+
+    it("Should be able to withdraw tokens after failed IAZO", async () => {
+        const balance = await baseToken.balanceOf(bob)
+        await iazo.userWithdraw({ from: bob });
+        const balanceAfterReceivedTokens = await baseToken.balanceOf(bob)
+
+        assert.equal(
+            balanceAfterReceivedTokens - balance,
+            "400000000000000000",
+            "account deposited check"
         );
     });
 });
