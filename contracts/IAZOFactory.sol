@@ -123,7 +123,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
         ERC20 _baseToken,
         bool _burnRemains,
         uint256[9] memory _uint_params
-    ) public payable {
+    ) external payable {
         require(address(_baseToken) != address(0), "Base token cannot be address(0)");
         IAZOParams memory params;
         params.TOKEN_PRICE = _uint_params[0];
@@ -258,7 +258,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
 
     /// @notice Add and use new IAZO implemetation
     /// @param _newIAZOImplementation The address of the new IAZO implementation
-    function pushIAZOVersion(IIAZO _newIAZOImplementation) public onlyOwner {
+    function pushIAZOVersion(IIAZO _newIAZOImplementation) external onlyOwner {
         require(_newIAZOImplementation.isIAZO(), 'implementation does not appear to be IAZO');
         IAZOImplementations.push(_newIAZOImplementation);
         IAZOVersion = IAZOImplementations.length - 1;
@@ -267,7 +267,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
 
     /// @notice Use older IAZO implemetation
     /// @param _newIAZOVersion The index of the to use IAZO implementation
-    function setIAZOVersion(uint256 _newIAZOVersion) public onlyOwner {
+    function setIAZOVersion(uint256 _newIAZOVersion) external onlyOwner {
         require(_newIAZOVersion < IAZOImplementations.length, 'version out of bounds');
         uint256 previousVersion = IAZOVersion;
         IAZOVersion = _newIAZOVersion;

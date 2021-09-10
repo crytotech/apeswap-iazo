@@ -42,6 +42,9 @@ contract IAZO is Initializable {
         IERC20 indexed token, 
         uint256 balance
     );
+    event UserWithdrawSuccess(address _address, uint256 _amount);
+    event UserWithdrawFailed(address _address, uint256 _amount);
+    event UserDeposited(address _address, uint256 _amount);
 
     struct IAZOInfo {
         address payable IAZO_OWNER; //IAZO_OWNER address
@@ -227,6 +230,7 @@ contract IAZO is Initializable {
         if (!IAZO_INFO.IAZO_SALE_IN_NATIVE) {
             IAZO_INFO.BASE_TOKEN.safeTransferFrom(msg.sender, address(this), amount_in);
         }
+        emit UserDeposited(msg.sender, amount_in);
     }
 
     /// @notice The function users call to withdraw funds
@@ -259,6 +263,7 @@ contract IAZO is Initializable {
         uint256 tokensToTransfer = buyer.tokensBought;
         buyer.tokensBought = 0;
         IAZO_INFO.IAZO_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
+       emit UserWithdrawSuccess(msg.sender, tokensToTransfer);
     }
 
     function userWithdrawFailedPrivate() private {
@@ -273,6 +278,8 @@ contract IAZO is Initializable {
         } else {
             IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
         }
+       emit UserWithdrawFailed(msg.sender, tokensToTransfer);
+
     }
 
     /**
@@ -353,6 +360,7 @@ contract IAZO is Initializable {
         );
         TOKEN_LOCK_ADDRESS = newTokenLockContract;
 
+        STATUS.LP_GENERATION_COMPLETE = true;
 
         if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
             FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
@@ -382,7 +390,6 @@ contract IAZO is Initializable {
             IAZO_INFO.BASE_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, remainingBaseBalance);
         }
         
-        STATUS.LP_GENERATION_COMPLETE = true;
         emit AddLiquidity(baseLiquidity, saleTokenLiquidity, remainingBaseBalance);
 
     }
