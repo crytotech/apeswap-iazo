@@ -397,6 +397,8 @@ contract IAZO is Initializable {
     ///   Tokens are sent to owner
     /// @param token The address of the ERC20 token to sweep
     function sweepToken(IERC20 token) external onlyAdmin {
+        require(token != IAZO_INFO.IAZO_TOKEN, "cannot sweep IAZO_TOKEN");
+        require(token != IAZO_INFO.BASE_TOKEN, "cannot sweep BASE_TOKEN");
         uint256 balance = token.balanceOf(address(this));
         token.transfer(msg.sender, balance);
         emit SweepWithdraw(msg.sender, token, balance);
