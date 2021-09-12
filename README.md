@@ -60,3 +60,7 @@ To generate/update the docs run:
 `yarn gen:docs`  
 
 Find the docs here: [IAZO Docs](docs/)
+
+## Coverage Report
+
+<img src="images/coverage-report.png">
