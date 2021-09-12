@@ -81,7 +81,7 @@ Final step when IAZO is successfull. lock liquidity and enable withdrawals of sa
 
 
 
-### `sweepToken(contract IERC20 token)` (external)
+### `sweepToken(contract ERC20 token)` (external)
 
 A public function to sweep accidental ERC20 transfers to this contract. 
   Tokens are sent to owner
