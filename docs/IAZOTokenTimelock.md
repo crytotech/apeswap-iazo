@@ -51,13 +51,13 @@ after 1 year".
 
 
 
-### `release(contract IERC20 _token)` (public)
+### `release(contract IERC20 _token)` (external)
 
 Transfers tokens held by timelock to beneficiary.
 
 
 
-### `addBeneficiary(address newBeneficiary)` (public)
+### `addBeneficiary(address newBeneficiary)` (external)
 
 Add an address that is eligible to unlock tokens.
 
@@ -69,7 +69,7 @@ Add an address that is eligible to unlock tokens.
 
 
 
-### `revoke(address _token)` (public)
+### `revoke(address _token)` (external)
 
 Allows the owner to revoke the timelock. Tokens already vested
 

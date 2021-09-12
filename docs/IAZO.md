@@ -126,3 +126,21 @@ A public function to sweep accidental ERC20 transfers to this contract.
 
 
 
+### `UserWithdrawSuccess(address _address, uint256 _amount)`
+
+
+
+
+
+### `UserWithdrawFailed(address _address, uint256 _amount)`
+
+
+
+
+
+### `UserDeposited(address _address, uint256 _amount)`
+
+
+
+
+
