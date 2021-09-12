@@ -1,7 +1,6 @@
 # IAZO - "Initial Ape Zone Offering"
 ![Contract Tests](https://github.com/ApeSwapFinance/apeswap-iazo/actions/workflows/CI/badge.svg)
   
-* [IAZO Test Coverage](coverage/index.html)
 * [IAZO Documentation](docs/)
 
 
