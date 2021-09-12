@@ -11,7 +11,7 @@ Locks liquidity on succesful IAZO
 
 
 
-### `apePairIsInitialised(address _iazoToken, address _baseToken) → bool` (public)
+### `apePairIsInitialised(address _iazoToken, address _baseToken) → bool` (external)
 
 Check if the token pair is initialised or not
 

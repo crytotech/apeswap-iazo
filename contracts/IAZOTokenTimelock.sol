@@ -99,7 +99,7 @@ contract IAZOTokenTimelock {
     /**
      * @notice Transfers tokens held by timelock to beneficiary.
      */
-    function release(IERC20 _token) public onlyBeneficiary {
+    function release(IERC20 _token) external onlyBeneficiary {
         require(
             block.timestamp >= releaseTime || revoked[address(_token)],
             "TokenTimelock: current time is before release time or not revoked"
@@ -115,7 +115,7 @@ contract IAZOTokenTimelock {
     /**
      * @notice Add an address that is eligible to unlock tokens.
      */
-    function addBeneficiary(address newBeneficiary) public onlyBeneficiary {
+    function addBeneficiary(address newBeneficiary) external onlyBeneficiary {
         addBeneficiaryInternal(newBeneficiary);
     }
 
@@ -131,7 +131,7 @@ contract IAZOTokenTimelock {
      * @notice Allows the owner to revoke the timelock. Tokens already vested
      * @param _token ERC20 token which is being locked
      */
-    function revoke(address _token) public onlyAdmin {
+    function revoke(address _token) external onlyAdmin {
         require(revocable, "Contract not revokable");
         require(!revoked[_token], "Already revoked");
 

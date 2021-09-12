@@ -8,14 +8,13 @@ const IAZOFactory = contract.fromArtifact("IAZOFactory");
 const IAZO = contract.fromArtifact("IAZO");
 const IAZOSettings = contract.fromArtifact("IAZOSettings");
 const IAZOExposer = contract.fromArtifact("IAZOExposer");
-const Banana = contract.fromArtifact("Banana");
 const ERC20Mock = contract.fromArtifact("ERC20Mock");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 
 
 describe("IAZO - Negative Tests", async function() {
-    const [proxyAdmin, adminAddress] = accounts;
+    const [proxyAdmin, adminAddress, alice, bob] = accounts;
     const { feeAddress, wNative, apeFactory } = getNetworkConfig('development', accounts);
 
     let factory = null;
@@ -24,8 +23,9 @@ describe("IAZO - Negative Tests", async function() {
     let settings = null;
     let exposer = null;
     let iazo = null;
-    let admin = null;
     let liquidity = null;
+
+    let startTimestamp = null;
 
     it("Should set all contract variables", async () => {
         banana = await ERC20Mock.new();
@@ -40,6 +40,12 @@ describe("IAZO - Negative Tests", async function() {
         liquidity = await IAZOLiquidityLocker.at(liquidityProxy.address);
         await liquidity.initialize(exposer.address, apeFactory, settings.address, adminAddress);
 
+        IAZOFactory.defaults({
+            gasPrice: 0,
+        })
+        IAZOUpgradeProxy.defaults({
+            gasPrice: 0,
+        })
         const factoryContract = await IAZOFactory.new();
         const factoryProxy = await IAZOUpgradeProxy.new(proxyAdmin, factoryContract.address, '0x');
         factory = await IAZOFactory.at(factoryProxy.address);
@@ -52,26 +58,48 @@ describe("IAZO - Negative Tests", async function() {
 
         const startIAZOCount = await exposer.IAZOsLength();
 
-        await banana.mint("2000000000000000000000000", { from: accounts[1] });
-        await banana.approve(factory.address, "2000000000000000000000000", { from: accounts[1] });
-        const startTimestamp = (await time.latest()) + 10;
+        const iazoDetails = {
+            tokenPrice: '2000000000000000000',
+            amount: '1000000000000000000000000',
+            softCap: '1000000000000000000000',
+            listingPrice: '2000000000000000000',
+            liquidityPercent: '300',
+        }
+
+        const tokensRequired = await factory.getTokensRequired(
+            iazoDetails.amount,
+            iazoDetails.tokenPrice,
+            iazoDetails.listingPrice,
+            iazoDetails.liquidityPercent,
+            18 // decimals
+        )
+
+        // 5% of offer tokens + liquidity + sale tokens
+        assert.equal(
+            tokensRequired.toString(),
+            '1350000000000000000000000',
+            'IAZO get tokens required is not accurate'
+        );
+
+        await banana.mint(tokensRequired, { from: alice });
+        await banana.approve(factory.address, tokensRequired, { from: alice });
+        startTimestamp = (await time.latest()) + 10;
         await factory.createIAZO(
-            accounts[1], 
+            alice, 
             banana.address, 
             baseToken.address, 
-            true, 
             false, 
             [
-                "2000000000000000000", // token price
-                "1000000000000000000000000", // amount
-                "1000000000000000000000", // softcap
+                iazoDetails.tokenPrice, // token price
+                iazoDetails.amount, // amount
+                iazoDetails.softCap, // softcap
                 startTimestamp, // start time
                 43201, // active time
                 2419000, // lock period
                 "2000000000000000000000000", // max spend per buyer
-                "300", // liquidity percent
-                0 // listing price
-            ], { from: accounts[1], value: 1000000000000000000 })
+                iazoDetails.liquidityPercent, // liquidity percent
+                iazoDetails.softCap // listing price
+            ], { from: alice, value: 1000000000000000000 })
 
         //Fee check2
         const newBalance = await balance.current(FeeAddress, unit = 'wei')
@@ -101,6 +129,35 @@ describe("IAZO - Negative Tests", async function() {
         );
     });
 
+    it("iazo status should be in progress when start time is reached", async () => {
+        time.increaseTo(startTimestamp);
+
+        iazoStatus = await iazo.getIAZOState();
+        assert.equal(
+            iazoStatus,
+            1,
+            "iazo should now be active"
+        );
+    });
+
+    it("Users should be able to buy IAZO tokens", async () => {
+        await baseToken.mint("400000000000000000", { from: bob });
+        await baseToken.approve(iazo.address, "400000000000000000", { from: bob });
+        await iazo.userDeposit("400000000000000000", { from: bob });
+
+        const buyerInfo = await iazo.BUYERS.call(bob);
+        assert.equal(
+            buyerInfo.deposited,
+            "400000000000000000",
+            "account deposited check"
+        );
+        assert.equal(
+            buyerInfo.tokensBought,
+            "200000000000000000",
+            "account bought check"
+        );
+    });
+
     it("iazo status should be failed", async () => {
         await iazo.forceFailAdmin({ from: adminAddress });
         const iazoStatus = await iazo.getIAZOState();
@@ -108,6 +165,18 @@ describe("IAZO - Negative Tests", async function() {
             iazoStatus,
             4,
             "start status should be 4"
+        );
+    });
+
+    it("Should be able to withdraw tokens after failed IAZO", async () => {
+        const balance = await baseToken.balanceOf(bob)
+        await iazo.userWithdraw({ from: bob });
+        const balanceAfterReceivedTokens = await baseToken.balanceOf(bob)
+
+        assert.equal(
+            balanceAfterReceivedTokens - balance,
+            "400000000000000000",
+            "account deposited check"
         );
     });
 });

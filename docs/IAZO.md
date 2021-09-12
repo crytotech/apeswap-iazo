@@ -23,7 +23,7 @@ Modifier: Only allow IAZO owner address to call certain functions
 
 
 
-### `initialize(address[2] _addresses, address payable[2] _addressesPayable, uint256[11] _uint256s, bool[2] _bools, contract ERC20[2] _ERC20s, contract IWNative _wnative)` (external)
+### `initialize(address[2] _addresses, address payable[2] _addressesPayable, uint256[12] _uint256s, bool[1] _bools, contract ERC20[2] _ERC20s, contract IWNative _wnative)` (external)
 
 Initialization of IAZO
 
@@ -102,7 +102,7 @@ A public function to sweep accidental ERC20 transfers to this contract.
 
 
 
-### `BaseFeeCollected(address feeAddress, uint256 baseFeeCollected)`
+### `FeesCollected(address feeAddress, uint256 baseFeeCollected, uint256 IAZOTokenFee)`
 
 
 
@@ -121,6 +121,24 @@ A public function to sweep accidental ERC20 transfers to this contract.
 
 
 ### `SweepWithdraw(address receiver, contract IERC20 token, uint256 balance)`
+
+
+
+
+
+### `UserWithdrawSuccess(address _address, uint256 _amount)`
+
+
+
+
+
+### `UserWithdrawFailed(address _address, uint256 _amount)`
+
+
+
+
+
+### `UserDeposited(address _address, uint256 _amount)`
 
 
 

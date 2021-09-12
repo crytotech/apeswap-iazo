@@ -15,10 +15,8 @@ pragma solidity 0.8.6;
  */
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
-import "./IAZOUpgradeProxy.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./OwnableProxy.sol";
-
 import "./interface/ERC20.sol";
 import "./interface/IIAZOSettings.sol";
 import "./interface/IIAZOLiquidityLocker.sol";
@@ -38,10 +36,10 @@ interface IIAZO {
         address[2] memory _addresses, 
         // _addressesPayable = [IAZOOwner, feeAddress]
         address payable[2] memory _addressesPayable, 
-        // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startBlock, _activeBlocks, _lockPeriod, _baseFee]
-        uint256[11] memory _uint256s, 
-        // _bools = [_prepaidFee, _burnRemains]
-        bool[2] memory _bools, 
+        // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startBlock, _activeBlocks, _lockPeriod, _baseFee, _iazoTokenFee]
+        uint256[12] memory _uint256s, 
+        // _bools = [_burnRemains]
+        bool[1] memory _bools, 
         // _ERC20s = [_iazoToken, _baseToken]
         ERC20[2] memory _ERC20s, 
         IWNative _wnative
@@ -117,17 +115,15 @@ contract IAZOFactory is OwnableProxy, Initializable {
     /// @param _IAZOOwner The address of the IAZO owner
     /// @param _IAZOToken The address of the token to be sold
     /// @param _baseToken The address of the base token to be received
-    /// @param _prepaidFee Option to either pay fee on creation or on IAZO success
     /// @param _burnRemains Option to burn the remaining unsold tokens
     /// @param _uint_params IAZO settings. token price, amount of tokens for sale, softcap, start time, active time, liquidity locking period, maximum spend per buyer, percentage to lock as liquidity, listing price
     function createIAZO(
         address payable _IAZOOwner,
         ERC20 _IAZOToken,
         ERC20 _baseToken,
-        bool _prepaidFee,
         bool _burnRemains,
         uint256[9] memory _uint_params
-    ) public payable {
+    ) external payable {
         require(address(_baseToken) != address(0), "Base token cannot be address(0)");
         IAZOParams memory params;
         params.TOKEN_PRICE = _uint_params[0];
@@ -151,16 +147,14 @@ contract IAZOFactory is OwnableProxy, Initializable {
         require(params.LOCK_PERIOD >= IAZO_SETTINGS.getMinLockPeriod(), 'Lock period too low');
 
         // Charge native coin fee for contract creation
-        if(_prepaidFee){
-            require(
-                msg.value >= IAZO_SETTINGS.getNativeCreationFee(),
-                "Fee not met"
-            );
-            /// @notice the entire funds sent in the tx will be taken as long as it's above the ethCreationFee
-            IAZO_SETTINGS.getFeeAddress().transfer(
-                address(this).balance
-            );
-        }
+        require(
+            msg.value >= IAZO_SETTINGS.getNativeCreationFee(),
+            "Fee not met"
+        );
+        /// @notice the entire funds sent in the tx will be taken as long as it's above the ethCreationFee
+        IAZO_SETTINGS.getFeeAddress().transfer(
+            address(this).balance
+        );
 
         require(params.START_TIME > block.timestamp, "iazo should start in future");
         require(
@@ -186,23 +180,26 @@ contract IAZOFactory is OwnableProxy, Initializable {
         // Check that the hardcap is greater than or equal to softcap
         require(hardcap >= params.SOFTCAP, 'softcap is greater than hardcap');
 
+        uint256 IAZOTokenFee = IAZO_SETTINGS.getIAZOTokenFee();
+
         uint256 tokensRequired = getTokensRequiredInternal(
             params.AMOUNT,
             params.LISTING_PRICE, 
             params.LIQUIDITY_PERCENT,
             hardcap,
-            tokenDecimals
+            tokenDecimals,
+            IAZOTokenFee
         );
 
         // Setup initialization variables
         address[2] memory _addresses = [address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER)];
         address payable[2] memory _addressesPayable = [_IAZOOwner, IAZO_SETTINGS.getFeeAddress()];
-        uint256[11] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, hardcap, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_TIME, params.ACTIVE_TIME, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee()];
-        bool[2] memory _bools = [_prepaidFee, _burnRemains];
+        uint256[12] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, hardcap, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_TIME, params.ACTIVE_TIME, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee(), IAZOTokenFee];
+        bool[1] memory _bools = [_burnRemains];
         ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
-        // Deploy proxy contract and set implementation to current IAZO version 
-        IAZOUpgradeProxy newIAZO = new IAZOUpgradeProxy(IAZO_SETTINGS.getBurnAddress(), address(IAZOImplementations[IAZOVersion]), '');
-        IIAZO(address(newIAZO)).initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, ERC20Mock);
+        // Deploy clone contract and set implementation to current IAZO version 
+        IIAZO newIAZO = IIAZO(Clones.clone(address(IAZOImplementations[IAZOVersion])));
+        newIAZO.initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, ERC20Mock);
         IAZO_EXPOSER.registerIAZO(address(newIAZO));
         _IAZOToken.transferFrom(address(msg.sender), address(newIAZO), tokensRequired);
         // transfer check and reflect token protection
@@ -226,7 +223,9 @@ contract IAZOFactory is OwnableProxy, Initializable {
 
     /// @notice Check for how many tokens are required for the IAZO including token sale and liquidity.
     /// @param _amount The amount of tokens for sale
-    /// @param _tokenPrice The price of a single token
+    /// @param _tokenPrice The price of the IAZO token in base token for sale during IAZO
+    /// @param _listingPrice The price of the IAZO token in base token when creating liquidity
+    /// @param _liquidityPercent The price of a single token
     /// @param _decimals Amount of decimals of IAZO token
     /// @return Amount of tokens required
     function getTokensRequired (
@@ -235,9 +234,10 @@ contract IAZOFactory is OwnableProxy, Initializable {
         uint256 _listingPrice, 
         uint256 _liquidityPercent, 
         uint256 _decimals
-    ) external pure returns (uint256) {
+    ) external view returns (uint256) {
         uint256 hardcap = getHardCap(_amount, _tokenPrice, _decimals);
-        return getTokensRequiredInternal(_amount, _listingPrice, _liquidityPercent, hardcap, _decimals);
+        uint256 IAZOTokenFee = IAZO_SETTINGS.getIAZOTokenFee();
+        return getTokensRequiredInternal(_amount, _listingPrice, _liquidityPercent, hardcap, _decimals, IAZOTokenFee);
     }
 
     function getTokensRequiredInternal (
@@ -245,17 +245,20 @@ contract IAZOFactory is OwnableProxy, Initializable {
         uint256 _listingPrice, 
         uint256 _liquidityPercent, 
         uint256 _hardcap, 
-        uint256 _decimals
+        uint256 _decimals,
+        uint256 _IAZOTokenFee
     ) internal pure returns (uint256) {
         uint256 liquidityRequired = _hardcap * _liquidityPercent * (10 ** _decimals) / 1000 / _listingPrice;
         require(liquidityRequired > 0, "Something wrong with liquidity values");
-        uint256 tokensRequired = _amount + liquidityRequired;
+        uint256 IAZOTokenFee = _amount * _IAZOTokenFee  / 1000;
+        require(IAZOTokenFee > 0, "Something wrong with iazo token fee values");
+        uint256 tokensRequired = _amount + liquidityRequired + IAZOTokenFee;
         return tokensRequired;
     }
 
     /// @notice Add and use new IAZO implemetation
     /// @param _newIAZOImplementation The address of the new IAZO implementation
-    function pushIAZOVersion(IIAZO _newIAZOImplementation) public onlyOwner {
+    function pushIAZOVersion(IIAZO _newIAZOImplementation) external onlyOwner {
         require(_newIAZOImplementation.isIAZO(), 'implementation does not appear to be IAZO');
         IAZOImplementations.push(_newIAZOImplementation);
         IAZOVersion = IAZOImplementations.length - 1;
@@ -264,7 +267,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
 
     /// @notice Use older IAZO implemetation
     /// @param _newIAZOVersion The index of the to use IAZO implementation
-    function setIAZOVersion(uint256 _newIAZOVersion) public onlyOwner {
+    function setIAZOVersion(uint256 _newIAZOVersion) external onlyOwner {
         require(_newIAZOVersion < IAZOImplementations.length, 'version out of bounds');
         uint256 previousVersion = IAZOVersion;
         IAZOVersion = _newIAZOVersion;

@@ -47,7 +47,19 @@
 
 
 
+### `getIAZOTokenFee() → uint256` (external)
+
+
+
+
+
 ### `getMaxBaseFee() → uint256` (external)
+
+
+
+
+
+### `getMaxIAZOTokenFee() → uint256` (external)
 
 
 
@@ -89,7 +101,7 @@
 
 
 
-### `setFees(uint256 _baseFee, uint256 _nativeCreationFee)` (external)
+### `setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee)` (external)
 
 
 

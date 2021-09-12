@@ -47,7 +47,19 @@ Settings for new IAZOs
 
 
 
+### `getIAZOTokenFee() → uint256` (external)
+
+
+
+
+
 ### `getMaxBaseFee() → uint256` (external)
+
+
+
+
+
+### `getMaxIAZOTokenFee() → uint256` (external)
 
 
 
@@ -89,7 +101,7 @@ Settings for new IAZOs
 
 
 
-### `setFees(uint256 _baseFee, uint256 _nativeCreationFee)` (external)
+### `setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee)` (external)
 
 
 
@@ -132,7 +144,7 @@ Settings for new IAZOs
 
 
 
-### `UpdateFees(uint256 previousBaseFee, uint256 newBaseFee, uint256 previousETHFee, uint256 newETHFee)`
+### `UpdateFees(uint256 previousBaseFee, uint256 newBaseFee, uint256 previousIAZOTokenFee, uint256 newIAZOTokenFee, uint256 previousETHFee, uint256 newETHFee)`
 
 
 

@@ -125,7 +125,7 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
     /// @param _iazoToken The address of the IAZO token
     /// @param _baseToken The address of the base token
     /// @return Whether the token pair is initialised or not
-    function apePairIsInitialised(address _iazoToken, address _baseToken) public view returns (bool) {
+    function apePairIsInitialised(address _iazoToken, address _baseToken) external view returns (bool) {
         address pairAddress = APE_FACTORY.getPair(_iazoToken, _baseToken);
         if (pairAddress == address(0)) {
             return false;

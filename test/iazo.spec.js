@@ -1,4 +1,4 @@
-const { balance, expectRevert, time, ether } = require('@openzeppelin/test-helpers');
+const { balance, expectRevert, time, ether, BN } = require('@openzeppelin/test-helpers');
 const { accounts, contract } = require('@openzeppelin/test-environment');
 const { expect, assert } = require('chai');
 const { getNetworkConfig } = require("../deploy-config");
@@ -24,7 +24,7 @@ describe('IAZO', function () {
 
     let dexFactory = null;
     let iazoFactory = null;
-    let banana = null;
+    let iazoToken = null;
     let baseToken = null;
     let settings = null;
     let exposer = null;
@@ -33,7 +33,7 @@ describe('IAZO', function () {
     let liquidityLocker = null;
 
     it("Should set all contract variables", async () => {
-        banana = await ERC20Mock.new();
+        iazoToken = await ERC20Mock.new();
         baseToken = await ERC20Mock.new();  
         baseIazo = await IAZO.new();
         exposer = await IAZOExposer.new();
@@ -72,8 +72,8 @@ describe('IAZO', function () {
 
         const startIAZOCount = await exposer.IAZOsLength();
 
-        await banana.mint(ether("2000000"), { from: carol });
-        await banana.approve(iazoFactory.address, ether("2000000"), { from: carol });
+        await iazoToken.mint(ether("2000000"), { from: carol });
+        await iazoToken.approve(iazoFactory.address, ether("2000000"), { from: carol });
 
         let IAZOConfig = {
             tokenPrice: ether('.1'), // token price
@@ -86,11 +86,11 @@ describe('IAZO', function () {
             liquidityPercent: "300", // liquidity percent
             listingPrice: ether(".2") // listing price
         }
+
         await iazoFactory.createIAZO(
             carol, 
-            banana.address, 
+            iazoToken.address, 
             baseToken.address, 
-            true, 
             false, 
             [
                 IAZOConfig.tokenPrice,
@@ -127,7 +127,7 @@ describe('IAZO', function () {
             IAZOConfig.liquidityPercent,
             18 // decimals
         );
-        const iazoTokenBalance = await banana.balanceOf(currentIazo.address, {from: carol});
+        const iazoTokenBalance = await iazoToken.balanceOf(currentIazo.address, {from: carol});
         assert.equal(
             iazoTokenBalance.toString(),
             tokensRequired.toString(),
@@ -136,10 +136,11 @@ describe('IAZO', function () {
     });
 
     it("Should receive the iazo token", async () => {
-        const balance = await banana.balanceOf(currentIazo.address);
+        const balance = await iazoToken.balanceOf(currentIazo.address);
+
         assert.equal(
-            balance.valueOf(),
-            21000000000000000000 + 3150000000000000000, //hardcoded for now because might change the getTokensRequired() function
+            balance.valueOf().toString(),
+            new BN('21000000000000000000').add(new BN('3150000000000000000').add(new BN('1050000000000000000'))), //hardcoded for now because might change the getTokensRequired() function
             "check for received iazo token"
         );
     });
@@ -197,7 +198,7 @@ describe('IAZO', function () {
         );
     });
 
-    it("Users should be able to buy limited IAZO tokens", async () => {
+    it("Users should be able to buy IAZO tokens", async () => {
         await baseToken.mint("10000000000000000", { from: bob });
         await baseToken.approve(currentIazo.address, "10000000000000000", { from: bob });
         await currentIazo.userDeposit("10000000000000000", { from: bob });
@@ -245,12 +246,20 @@ describe('IAZO', function () {
 
 
     let baseTokenBalance = null;
+    let IAZOTokenBalance = null;
+    let feeBaseTokenBalance = null;
+    let feeIAZOTokenBalance = null;
 
     it("Should add liquidity and be able to withdraw bought tokens", async () => {
+        baseTokenBalance= await baseToken.balanceOf(carol);
+        IAZOTokenBalance= await iazoToken.balanceOf(carol);
+        feeBaseTokenBalance= await baseToken.balanceOf(feeAddress);
+        feeIAZOTokenBalance= await iazoToken.balanceOf(feeAddress);
+
         // NOTE: Can call this function publicly after the IAZO, but testing withdraw
         // await currentIazo.addLiquidity();
         await currentIazo.userWithdraw({ from: alice });
-        const balanceAfterReceivedTokens = await banana.balanceOf(alice)
+        const balanceAfterReceivedTokens = await iazoToken.balanceOf(alice)
 
         // Test LP generation on initial withdraw 
         status = await currentIazo.STATUS.call();
@@ -286,9 +295,9 @@ describe('IAZO', function () {
     });
 
     it("Should be able to withdraw bought tokens", async () => {
-        const balance = await banana.balanceOf(bob)
+        const balance = await iazoToken.balanceOf(bob)
         await currentIazo.userWithdraw({ from: bob });
-        const balanceAfterReceivedTokens = await banana.balanceOf(bob)
+        const balanceAfterReceivedTokens = await iazoToken.balanceOf(bob)
 
         assert.equal(
             balanceAfterReceivedTokens - balance,
@@ -309,7 +318,7 @@ describe('IAZO', function () {
     });
 
     it("Should approve locker to spend iazo token", async () => {
-        const allowance = await banana.allowance(currentIazo.address, liquidityLocker.address);
+        const allowance = await iazoToken.allowance(currentIazo.address, liquidityLocker.address);
 
         assert.equal(
             allowance,
@@ -323,7 +332,38 @@ describe('IAZO', function () {
 
         assert.equal(
             newWnativeBalance - baseTokenBalance,
-            "1470000000000000000",
+            //2.1 - 5% fee - 30% liquidity
+            new BN("1365000000000000000"),
+            "wrong balance"
+        );
+    });
+
+    it("transfer left over iazo tokens to iazo owner", async () => {
+        newIAZOTokenBalance = await iazoToken.balanceOf(carol);
+
+        assert.equal(
+            newIAZOTokenBalance - IAZOTokenBalance,
+            //All iazo tokens should be sold (or used for liquidity and fees)
+            new BN("0"),
+            "wrong balance"
+        );
+    });
+
+    it("transfer fees to fee address", async () => {
+        newBaseTokenBalance = await baseToken.balanceOf(feeAddress);
+        newIAZOTokenBalance = await iazoToken.balanceOf(feeAddress);
+
+        assert.equal(
+            newBaseTokenBalance - feeBaseTokenBalance,
+            // Default base token fee is 5%
+            new BN("2100000000000000000").div(new BN('20')),
+            "wrong balance"
+        );
+
+        assert.equal(
+            newIAZOTokenBalance - feeIAZOTokenBalance,
+            // Default iazo token fee is 5%
+            new BN("21000000000000000000").div(new BN('20')),
             "wrong balance"
         );
     });

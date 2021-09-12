@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/IAZOFactory.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> IAZOFactory.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">84.51% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>60/71</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">65% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>26/40</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">62.5% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>5/8</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">84.51% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>60/71</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">18×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19×</span>
+<span class="cline-any cline-yes">17×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-yes">11×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">//SPDX-License-Identifier: UNLICENSED
+//ALL RIGHTS RESERVED
+//apeswap.finance
+&nbsp;
+pragma solidity 0.8.6;
+&nbsp;
+/*
+ * ApeSwapFinance 
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com    
+ * Twitter:         https://twitter.com/ape_swap 
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
+&nbsp;
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "./OwnableProxy.sol";
+import "./interface/ERC20.sol";
+import "./interface/IIAZOSettings.sol";
+import "./interface/IIAZOLiquidityLocker.sol";
+import "./interface/IWNative.sol";
+&nbsp;
+&nbsp;
+interface IIAZO_EXPOSER {
+    function initializeExposer(address _iazoFactory, address _liquidityLocker) external;
+    function registerIAZO(address newIAZO) external;
+}
+&nbsp;
+interface IIAZO {
+    function isIAZO() external returns (bool);
+&nbsp;
+    function initialize(
+        // _addresses = [IAZOSettings, IAZOLiquidityLocker]
+        address[2] memory _addresses, 
+        // _addressesPayable = [IAZOOwner, feeAddress]
+        address payable[2] memory _addressesPayable, 
+        // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startBlock, _activeBlocks, _lockPeriod, _baseFee, _iazoTokenFee]
+        uint256[12] memory _uint256s, 
+        // _bools = [_burnRemains]
+        bool[1] memory _bools, 
+        // _ERC20s = [_iazoToken, _baseToken]
+        ERC20[2] memory _ERC20s, 
+        IWNative _wnative
+    ) external;     
+}
+&nbsp;
+/// @title IAZO factory 
+/// @author ApeSwapFinance
+/// @notice Factory to create new IAZOs
+contract IAZOFactory is OwnableProxy, Initializable {
+    IIAZO_EXPOSER public IAZO_EXPOSER;
+    IIAZOSettings public IAZO_SETTINGS;
+    IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
+    IWNative public ERC20Mock;
+&nbsp;
+    bytes public abiEncodeData;
+    IIAZO[] public IAZOImplementations;
+    uint256 public IAZOVersion = 0;
+&nbsp;
+    bool constant public isIAZOFactory = true;
+&nbsp;
+    event IAZOCreated(address indexed newIAZO);
+    event PushIAZOVersion(IIAZO indexed newIAZO, uint256 versionId);
+    event UpdateIAZOVersion(uint256 previousVersion, uint256 newVersion);
+    event SweepWithdraw(
+        address indexed receiver, 
+        IERC20 indexed token, 
+        uint256 balance
+    );
+&nbsp;
+    struct IAZOParams {
+        uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or NATIVE)
+        uint256 AMOUNT; // AMOUNT of IAZO_TOKENS for sale
+        uint256 HARDCAP; // HARDCAP of earnings.
+        uint256 SOFTCAP; // SOFTCAP for earning. if not reached IAZO is cancelled
+        uint256 START_TIME; // block to start IAZO
+        uint256 ACTIVE_TIME; // end of IAZO -&gt; START_TIME + ACTIVE_TIME
+        uint256 LOCK_PERIOD; // days to lock earned tokens for IAZO_OWNER
+        uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
+        uint256 LIQUIDITY_PERCENT; // Percentage of coins that will be locked in liquidity
+        uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
+    }
+&nbsp;
+    /// @notice Initialization of factory
+    /// @param _iazoExposer The address of the IAZO exposer
+    /// @param _iazoSettings The address of the IAZO settings
+    /// @param _iazoliquidityLocker The address of the IAZO liquidity locker
+    /// @param _iazoInitialImplementation The address of the initial IAZO implementation
+    /// @param _wnative The address of the wrapped native coin
+    /// @param _admin The admin address
+    function initialize(
+        IIAZO_EXPOSER _iazoExposer, 
+        IIAZOSettings _iazoSettings, 
+        IIAZOLiquidityLocker _iazoliquidityLocker, 
+        IIAZO _iazoInitialImplementation,
+        IWNative _wnative,
+        address _admin
+    ) external initializer {
+        _owner = _admin;
+        // Setup the initial IAZO code to be used as the implementation
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_iazoInitialImplementation.isIAZO(), 'implementation does not appear to be IAZO');
+        IAZOImplementations.push(_iazoInitialImplementation);
+        IAZO_EXPOSER = _iazoExposer;
+        IAZO_EXPOSER.initializeExposer(address(this), address(_iazoliquidityLocker));
+        IAZO_SETTINGS = _iazoSettings;
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
+        IAZO_LIQUIDITY_LOCKER = _iazoliquidityLocker;
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(IAZO_LIQUIDITY_LOCKER.isIAZOLiquidityLocker(), 'isIAZOLiquidityLocker call returns false');
+        ERC20Mock = _wnative;
+    }
+&nbsp;
+    /// @notice Creates new IAZO and adds address to IAZOExposer
+    /// @param _IAZOOwner The address of the IAZO owner
+    /// @param _IAZOToken The address of the token to be sold
+    /// @param _baseToken The address of the base token to be received
+    /// @param _burnRemains Option to burn the remaining unsold tokens
+    /// @param _uint_params IAZO settings. token price, amount of tokens for sale, softcap, start time, active time, liquidity locking period, maximum spend per buyer, percentage to lock as liquidity, listing price
+    function createIAZO(
+        address payable _IAZOOwner,
+        ERC20 _IAZOToken,
+        ERC20 _baseToken,
+        bool _burnRemains,
+        uint256[9] memory _uint_params
+    ) external payable {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(address(_baseToken) != address(0), "Base token cannot be address(0)");
+        IAZOParams memory params;
+        params.TOKEN_PRICE = _uint_params[0];
+        params.AMOUNT = _uint_params[1];
+        params.SOFTCAP = _uint_params[2];
+        params.START_TIME = _uint_params[3];
+        params.ACTIVE_TIME = _uint_params[4];
+        params.LOCK_PERIOD = _uint_params[5];
+        params.MAX_SPEND_PER_BUYER = _uint_params[6];
+        params.LIQUIDITY_PERCENT = _uint_params[7];
+        if(_uint_params[8] == 0){
+            params.LISTING_PRICE = params.TOKEN_PRICE;
+        } else {
+            params.LISTING_PRICE = _uint_params[8];
+        }
+&nbsp;
+        // Check that the unlock time was not sent in ms
+        // This timestamp is Nov 20 2286
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(params.LOCK_PERIOD &lt; 9999999999, 'unlock time is too large ');
+        // Lock period must be greater than the min lock period
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(params.LOCK_PERIOD &gt;= IAZO_SETTINGS.getMinLockPeriod(), 'Lock period too low');
+&nbsp;
+        // Charge native coin fee for contract creation
+        require(
+            msg.value &gt;= IAZO_SETTINGS.getNativeCreationFee(),
+            "Fee not met"
+        );
+        /// @notice the entire funds sent in the tx will be taken as long as it's above the ethCreationFee
+        IAZO_SETTINGS.getFeeAddress().transfer(
+            address(this).balance
+        );
+&nbsp;
+        require(params.START_TIME &gt; block.timestamp, "iazo should start in future");
+        require(
+            params.ACTIVE_TIME &gt;= IAZO_SETTINGS.getMinIAZOLength(), 
+            "iazo length not long enough"
+        );
+        require(
+            params.ACTIVE_TIME &lt;= IAZO_SETTINGS.getMaxIAZOLength(), 
+            "Exceeds max iazo length"
+        );
+&nbsp;
+        /// @notice require(params.AMOUNT &gt; tokenDecimals) was removed below in place of this check
+        require(params.AMOUNT &gt;= 10000, "Minimum divisibility");
+        require(params.TOKEN_PRICE &gt; 0, "Invalid token price");
+        /// @dev Adjust liquidity percentage settings here
+        require(
+            params.LIQUIDITY_PERCENT &gt;= 300 &amp;&amp; params.LIQUIDITY_PERCENT &lt;= 1000,
+            "Liquidity percentage too low"
+        ); // 30% minimum liquidity lock
+        // Find the hard cap of the offering in base tokens
+        uint256 tokenDecimals = _IAZOToken.decimals();
+        uint256 hardcap = getHardCap(params.AMOUNT, params.TOKEN_PRICE, tokenDecimals);
+        // Check that the hardcap is greater than or equal to softcap
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(hardcap &gt;= params.SOFTCAP, 'softcap is greater than hardcap');
+&nbsp;
+        uint256 IAZOTokenFee = IAZO_SETTINGS.getIAZOTokenFee();
+&nbsp;
+        uint256 tokensRequired = getTokensRequiredInternal(
+            params.AMOUNT,
+            params.LISTING_PRICE, 
+            params.LIQUIDITY_PERCENT,
+            hardcap,
+            tokenDecimals,
+            IAZOTokenFee
+        );
+&nbsp;
+        // Setup initialization variables
+        address[2] memory _addresses = [address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER)];
+        address payable[2] memory _addressesPayable = [_IAZOOwner, IAZO_SETTINGS.getFeeAddress()];
+        uint256[12] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, hardcap, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_TIME, params.ACTIVE_TIME, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee(), IAZOTokenFee];
+        bool[1] memory _bools = [_burnRemains];
+        ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
+        // Deploy clone contract and set implementation to current IAZO version 
+        IIAZO newIAZO = IIAZO(Clones.clone(address(IAZOImplementations[IAZOVersion])));
+        newIAZO.initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, ERC20Mock);
+        IAZO_EXPOSER.registerIAZO(address(newIAZO));
+        _IAZOToken.transferFrom(address(msg.sender), address(newIAZO), tokensRequired);
+        // transfer check and reflect token protection
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_IAZOToken.balanceOf(address(newIAZO)) == tokensRequired, 'invalid amount transferred in');
+        emit IAZOCreated(address(newIAZO));
+    }
+&nbsp;
+    /// @notice Creates new IAZO and adds address to IAZOExposer
+    /// @param _amount The amount of tokens for sale
+    /// @param _tokenPrice The price of a single token
+    /// @param _decimals Amount of decimals of IAZO token
+    /// @return Hardcap of the IAZO
+    function getHardCap(
+        uint256 _amount, 
+        uint256 _tokenPrice, 
+        uint256 _decimals
+    ) public pure returns (uint256) {
+        uint256 hardcap = _amount * _tokenPrice / (10 ** _decimals);
+        return hardcap;
+    }
+&nbsp;
+    /// @notice Check for how many tokens are required for the IAZO including token sale and liquidity.
+    /// @param _amount The amount of tokens for sale
+    /// @param _tokenPrice The price of the IAZO token in base token for sale during IAZO
+    /// @param _listingPrice The price of the IAZO token in base token when creating liquidity
+    /// @param _liquidityPercent The price of a single token
+    /// @param _decimals Amount of decimals of IAZO token
+    /// @return Amount of tokens required
+    function getTokensRequired (
+        uint256 _amount, 
+        uint256 _tokenPrice, 
+        uint256 _listingPrice, 
+        uint256 _liquidityPercent, 
+        uint256 _decimals
+    ) external view returns (uint256) {
+        uint256 hardcap = getHardCap(_amount, _tokenPrice, _decimals);
+        uint256 IAZOTokenFee = IAZO_SETTINGS.getIAZOTokenFee();
+        return getTokensRequiredInternal(_amount, _listingPrice, _liquidityPercent, hardcap, _decimals, IAZOTokenFee);
+    }
+&nbsp;
+    function getTokensRequiredInternal (
+        uint256 _amount, 
+        uint256 _listingPrice, 
+        uint256 _liquidityPercent, 
+        uint256 _hardcap, 
+        uint256 _decimals,
+        uint256 _IAZOTokenFee
+    ) internal pure returns (uint256) {
+        uint256 liquidityRequired = _hardcap * _liquidityPercent * (10 ** _decimals) / 1000 / _listingPrice;
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(liquidityRequired &gt; 0, "Something wrong with liquidity values");
+        uint256 IAZOTokenFee = _amount * _IAZOTokenFee  / 1000;
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(IAZOTokenFee &gt; 0, "Something wrong with iazo token fee values");
+        uint256 tokensRequired = _amount + liquidityRequired + IAZOTokenFee;
+        return tokensRequired;
+    }
+&nbsp;
+    /// @notice Add and use new IAZO implemetation
+    /// @param _newIAZOImplementation The address of the new IAZO implementation
+<span class="fstat-no" title="function not covered" >    function pushIAZOVersion(IIAZO _newIAZOImplementation) external onlyOwner {</span>
+<span class="cstat-no" title="statement not covered" >        require(_newIAZOImplementation.isIAZO(), 'implementation does not appear to be IAZO')</span>;
+<span class="cstat-no" title="statement not covered" >        IAZOImplementations.push(_newIAZOImplementation)</span>;
+<span class="cstat-no" title="statement not covered" >        IAZOVersion = IAZOImplementations.length - 1</span>;
+<span class="cstat-no" title="statement not covered" >        emit PushIAZOVersion(_newIAZOImplementation, IAZOVersion);</span>
+    }
+&nbsp;
+    /// @notice Use older IAZO implemetation
+    /// @param _newIAZOVersion The index of the to use IAZO implementation
+<span class="fstat-no" title="function not covered" >    function setIAZOVersion(uint256 _newIAZOVersion) external onlyOwner {</span>
+<span class="cstat-no" title="statement not covered" >        require(_newIAZOVersion &lt; IAZOImplementations.length, 'version out of bounds')</span>;
+<span class="cstat-no" title="statement not covered" >        uint256 previousVersion = IAZOVersion;</span>
+<span class="cstat-no" title="statement not covered" >        IAZOVersion = _newIAZOVersion</span>;
+<span class="cstat-no" title="statement not covered" >        emit UpdateIAZOVersion(previousVersion, IAZOVersion);</span>
+    }
+&nbsp;
+    /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
+    ///   Tokens are sent to owner
+    /// @param token The address of the ERC20 token to sweep
+<span class="fstat-no" title="function not covered" >    function sweepToken(IERC20 token) external onlyOwner {</span>
+<span class="cstat-no" title="statement not covered" >        uint256 balance = token.balanceOf(address(this));</span>
+<span class="cstat-no" title="statement not covered" >        token.transfer(msg.sender, balance)</span>;
+<span class="cstat-no" title="statement not covered" >        emit SweepWithdraw(msg.sender, token, balance);</span>
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Sep 12 2021 13:21:12 GMT-0400 (Eastern Daylight Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>
