@@ -53,7 +53,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
     IIAZO_EXPOSER public IAZO_EXPOSER;
     IIAZOSettings public IAZO_SETTINGS;
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
-    IWNative public ERC20Mock;
+    IWNative public WNative;
 
     bytes public abiEncodeData;
     IIAZO[] public IAZOImplementations;
@@ -108,7 +108,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
         require(IAZO_SETTINGS.isIAZOSettings(), 'isIAZOSettings call returns false');
         IAZO_LIQUIDITY_LOCKER = _iazoliquidityLocker;
         require(IAZO_LIQUIDITY_LOCKER.isIAZOLiquidityLocker(), 'isIAZOLiquidityLocker call returns false');
-        ERC20Mock = _wnative;
+        WNative = _wnative;
     }
 
     /// @notice Creates new IAZO and adds address to IAZOExposer
@@ -199,7 +199,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
         ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
         // Deploy clone contract and set implementation to current IAZO version 
         IIAZO newIAZO = IIAZO(Clones.clone(address(IAZOImplementations[IAZOVersion])));
-        newIAZO.initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, ERC20Mock);
+        newIAZO.initialize(_addresses, _addressesPayable, _uint256s, _bools, _ERC20s, WNative);
         IAZO_EXPOSER.registerIAZO(address(newIAZO));
         _IAZOToken.transferFrom(address(msg.sender), address(newIAZO), tokensRequired);
         // transfer check and reflect token protection
