@@ -55,7 +55,6 @@ contract IAZOFactory is OwnableProxy, Initializable {
     IIAZOLiquidityLocker public IAZO_LIQUIDITY_LOCKER;
     IWNative public WNative;
 
-    bytes public abiEncodeData;
     IIAZO[] public IAZOImplementations;
     uint256 public IAZOVersion = 0;
 
