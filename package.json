@@ -16,8 +16,8 @@
         "migrate:dev": "truffle migrate --network development",
         "migrate:bsc-testnet": "truffle migrate --network bsc-testnet",
         "migrate:bsc": "truffle migrate --network bsc",
-        "verify:bsc-testnet": "truffle run verify IAZO --network bsc-testnet && truffle run verify IAZOFactory --network bsc-testnet && truffle run verify IAZOLiquidityLocker --network bsc-testnet && truffle run verify IAZOSettings --network bsc-testnet && truffle run verify IAZOUpgradeProxy --network bsc-testnet  && truffle run verify IAZOTokenTimelock --network bsc-testnet",
-        "verify:bsc": "truffle run verify IAZO --network bsc && truffle run verify IAZOFactory --network bsc && truffle run verify IAZOLiquidityLocker --network bsc && truffle run verify IAZOSettings --network bsc && truffle run verify IAZOUpgradeProxy --network bsc  && truffle run verify IAZOTokenTimelock --network bsc",
+        "verify:bsc-testnet": "truffle run verify IAZOExposer --network bsc-testnet && truffle run verify IAZO --network bsc-testnet && truffle run verify IAZOFactory --network bsc-testnet && truffle run verify IAZOLiquidityLocker --network bsc-testnet && truffle run verify IAZOSettings --network bsc-testnet && truffle run verify IAZOUpgradeProxy --network bsc-testnet  && truffle run verify IAZOTokenTimelock --network bsc-testnet",
+        "verify:bsc": "truffle run verify IAZOExposer --network bsc && truffle run verify IAZO --network bsc && truffle run verify IAZOFactory --network bsc && truffle run verify IAZOLiquidityLocker --network bsc && truffle run verify IAZOSettings --network bsc && truffle run verify IAZOUpgradeProxy --network bsc  && truffle run verify IAZOTokenTimelock --network bsc",
         "gen:docs": "solidity-docgen --solc-module solc",
         "size": "yarn compile && truffle run contract-size"
     },

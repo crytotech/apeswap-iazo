@@ -46,16 +46,17 @@ contract IAZOSettings {
     bool constant public isIAZOSettings = true;
     
     constructor(address admin, address feeAddress) {
-        SETTINGS.ADMIN_ADDRESS = admin;
-        SETTINGS.BASE_FEE = 50; // 5% (divided by 1000)
-        SETTINGS.MAX_BASE_FEE = 300; // max base fee percentage - 30% (divided by 1000)
-        SETTINGS.IAZO_TOKEN_FEE = 50; // 5% (divided by 1000)
-        SETTINGS.MAX_IAZO_TOKEN_FEE = 300; // max iazo fee percentage - 30% (divided by 1000)
-        SETTINGS.NATIVE_CREATION_FEE = 1e18; // 1 Native tokens
-        SETTINGS.FEE_ADDRESS = payable(feeAddress);
-        SETTINGS.MIN_IAZO_LENGTH = 43200; // 12 hrs (in seconds)
-        SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds) 
-        SETTINGS.MIN_LOCK_PERIOD = 2419000; // 28 days (in seconds)
+        // Percentages are multiplied by 1000
+        SETTINGS.ADMIN_ADDRESS = admin;     
+        SETTINGS.BASE_FEE = 50;                     // .05 (5%) - initial base fee %
+        SETTINGS.MAX_BASE_FEE = 300;                // .30 (30%) - max base fee %
+        SETTINGS.IAZO_TOKEN_FEE = 50;               // .05 (5%) - initial iazo fee %
+        SETTINGS.MAX_IAZO_TOKEN_FEE = 300;          // .30 (30%) - max iazo fee %
+        SETTINGS.NATIVE_CREATION_FEE = 1e18;        // 1 native token(s)
+        SETTINGS.FEE_ADDRESS = payable(feeAddress); 
+        SETTINGS.MIN_IAZO_LENGTH = 43200;           // 12 hrs (in seconds)
+        SETTINGS.MAX_IAZO_LENGTH = 1814000;         // 3 weeks (in seconds) 
+        SETTINGS.MIN_LOCK_PERIOD = 2419000;         // 28 days (in seconds)
         SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     }
 

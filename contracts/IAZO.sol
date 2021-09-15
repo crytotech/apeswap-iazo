@@ -62,8 +62,8 @@ contract IAZO is Initializable {
     }
 
     struct IAZOTimeInfo {
-        uint256 START_TIME; // block to start IAZO
-        uint256 ACTIVE_TIME; // end of IAZO -> block.timestamp + ACTIVE_TIME
+        uint256 START_TIME; // start timestamp of the IAZO
+        uint256 ACTIVE_TIME; // end of IAZO -> START_TIME + ACTIVE_TIME
         uint256 LOCK_PERIOD; // unix timestamp (3 weeks) to lock earned tokens for IAZO_OWNER
     }
 
@@ -172,15 +172,15 @@ contract IAZO is Initializable {
     function getIAZOState() public view returns (uint256) {
         // 4 FAILED - force fail
         if (STATUS.FORCE_FAILED) return 4; 
-        // 4 FAILED - softcap not met by end block
+        // 4 FAILED - softcap not met by end timestamp
         if ((block.timestamp > IAZO_TIME_INFO.START_TIME + IAZO_TIME_INFO.ACTIVE_TIME) && (STATUS.TOTAL_BASE_COLLECTED < IAZO_INFO.SOFTCAP)) return 4; 
         // 3 SUCCESS - hardcap met
         if (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.HARDCAP) return 3; 
-        // 2 SUCCESS - endblock and soft cap reached
+        // 2 SUCCESS - end timestamp and soft cap reached
         if ((block.timestamp > IAZO_TIME_INFO.START_TIME + IAZO_TIME_INFO.ACTIVE_TIME) && (STATUS.TOTAL_BASE_COLLECTED >= IAZO_INFO.SOFTCAP)) return 2; 
         // 1 ACTIVE - deposits enabled
         if ((block.timestamp >= IAZO_TIME_INFO.START_TIME) && (block.timestamp <= IAZO_TIME_INFO.START_TIME + IAZO_TIME_INFO.ACTIVE_TIME)) return 1; 
-        // 0 QUEUED - awaiting start block
+        // 0 QUEUED - awaiting starting timestamp
         return 0; 
     }
 

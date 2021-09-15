@@ -74,7 +74,7 @@ contract IAZOFactory is OwnableProxy, Initializable {
         uint256 AMOUNT; // AMOUNT of IAZO_TOKENS for sale
         uint256 HARDCAP; // HARDCAP of earnings.
         uint256 SOFTCAP; // SOFTCAP for earning. if not reached IAZO is cancelled
-        uint256 START_TIME; // block to start IAZO
+        uint256 START_TIME; // start timestamp of the IAZO
         uint256 ACTIVE_TIME; // end of IAZO -> START_TIME + ACTIVE_TIME
         uint256 LOCK_PERIOD; // days to lock earned tokens for IAZO_OWNER
         uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
