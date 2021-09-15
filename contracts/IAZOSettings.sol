@@ -31,6 +31,7 @@ contract IAZOSettings {
         uint256 MIN_IAZO_LENGTH; // minimum iazo active seconds
         uint256 MAX_IAZO_LENGTH; // maximum iazo active seconds
         uint256 MIN_LOCK_PERIOD;
+        uint256 MIN_LIQUIDITY_PERCENT;
     }
 
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
@@ -39,6 +40,7 @@ contract IAZOSettings {
     event UpdateMinIAZOLength(uint256 previousMinLength, uint256 newMinLength);
     event UpdateMaxIAZOLength(uint256 previousMaxLength, uint256 newMaxLength);
     event UpdateMinLockPeriod(uint256 previousMinLockPeriod, uint256 newMinLockPeriod);
+    event UpdateMinLiquidityPercent(uint256 previousMinLiquidityPercent, uint256 newMinLiquidityPercent);
     event UpdateBurnAddress(address previousBurnAddress, address newBurnAddress);
 
     Settings public SETTINGS;
@@ -57,6 +59,7 @@ contract IAZOSettings {
         SETTINGS.MIN_IAZO_LENGTH = 43200;           // 12 hrs (in seconds)
         SETTINGS.MAX_IAZO_LENGTH = 1814000;         // 3 weeks (in seconds) 
         SETTINGS.MIN_LOCK_PERIOD = 2419000;         // 28 days (in seconds)
+        SETTINGS.MIN_LIQUIDITY_PERCENT = 300;       // .30 (30%) of raise matched with IAZO tokens
         SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     }
 
@@ -106,6 +109,10 @@ contract IAZOSettings {
 
     function getMinLockPeriod() external view returns (uint256) {
         return SETTINGS.MIN_LOCK_PERIOD;
+    }
+
+    function getMinLiquidityPercent() external view returns (uint256) {
+        return SETTINGS.MIN_LIQUIDITY_PERCENT;
     }
     
     function getFeeAddress() external view returns (address payable) {
@@ -160,6 +167,12 @@ contract IAZOSettings {
         uint256 previousMinLockPeriod = SETTINGS.MIN_LOCK_PERIOD;
         SETTINGS.MIN_LOCK_PERIOD = _minLockPeriod;
         emit UpdateMinLockPeriod(previousMinLockPeriod, SETTINGS.MIN_LOCK_PERIOD);
+    }
+
+    function setMinLiquidityPercent(uint256 _minLiquidityPercent) external onlyAdmin {
+        uint256 previousMinLiquidityPercent = SETTINGS.MIN_LIQUIDITY_PERCENT;
+        SETTINGS.MIN_LIQUIDITY_PERCENT = _minLiquidityPercent;
+        emit UpdateMinLiquidityPercent(previousMinLiquidityPercent, SETTINGS.MIN_LIQUIDITY_PERCENT);
     }    
 
     function setBurnAddress(address _burnAddress) external onlyAdmin {

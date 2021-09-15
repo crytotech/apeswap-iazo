@@ -94,16 +94,17 @@ IAZO settings are configured in the [IAZOSettings](./contracts/IAZOSettings.sol)
 
 ```js
   // Percentages are multiplied by 1000
-  SETTINGS.ADMIN_ADDRESS              // Passed on deployment
-  SETTINGS.BASE_FEE = 50;             // .05 (5%) - initial base fee %
-  SETTINGS.MAX_BASE_FEE = 300;        // .30 (30%) - max base fee %
-  SETTINGS.IAZO_TOKEN_FEE = 50;       // .05 (5%) - initial iazo fee %
-  SETTINGS.MAX_IAZO_TOKEN_FEE = 300;  // .30 (30%) - max iazo fee %
-  SETTINGS.NATIVE_CREATION_FEE = 1e18; // 1 native token(s)
-  SETTINGS.FEE_ADDRESS                // Passed on deployment
-  SETTINGS.MIN_IAZO_LENGTH = 43200;   // 12 hrs (in seconds)
-  SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds) 
-  SETTINGS.MIN_LOCK_PERIOD = 2419000; // 28 days (in seconds)
+  SETTINGS.ADMIN_ADDRESS                // Passed on deployment
+  SETTINGS.BASE_FEE = 50;               // .05 (5%) - initial base fee %
+  SETTINGS.MAX_BASE_FEE = 300;          // .30 (30%) - max base fee %
+  SETTINGS.IAZO_TOKEN_FEE = 50;         // .05 (5%) - initial iazo fee %
+  SETTINGS.MAX_IAZO_TOKEN_FEE = 300;    // .30 (30%) - max iazo fee %
+  SETTINGS.NATIVE_CREATION_FEE = 1e18;  // 1 native token(s)
+  SETTINGS.FEE_ADDRESS                  // Passed on deployment
+  SETTINGS.MIN_IAZO_LENGTH = 43200;     // 12 hrs (in seconds)
+  SETTINGS.MAX_IAZO_LENGTH = 1814000;   // 3 weeks (in seconds) 
+  SETTINGS.MIN_LOCK_PERIOD = 2419000;   // 28 days (in seconds)
+  SETTINGS.MIN_LIQUIDITY_PERCENT = 300; // .30 (30%) of raise matched with IAZO tokens
   SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 ```
 

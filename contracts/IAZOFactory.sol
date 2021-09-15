@@ -170,9 +170,9 @@ contract IAZOFactory is OwnableProxy, Initializable {
         require(params.TOKEN_PRICE > 0, "Invalid token price");
         /// @dev Adjust liquidity percentage settings here
         require(
-            params.LIQUIDITY_PERCENT >= 300 && params.LIQUIDITY_PERCENT <= 1000,
+            params.LIQUIDITY_PERCENT >= IAZO_SETTINGS.getMinLiquidityPercent() && params.LIQUIDITY_PERCENT <= 1000,
             "Liquidity percentage too low"
-        ); // 30% minimum liquidity lock
+        );
         // Find the hard cap of the offering in base tokens
         uint256 tokenDecimals = _IAZOToken.decimals();
         uint256 hardcap = getHardCap(params.AMOUNT, params.TOKEN_PRICE, tokenDecimals);

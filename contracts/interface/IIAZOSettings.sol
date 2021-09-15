@@ -41,6 +41,8 @@ interface IIAZOSettings {
 
     function getMinLockPeriod() external view returns (uint256);
 
+    function getMinLiquidityPercent() external view returns (uint256);
+
     function getFeeAddress() external view returns (address payable);
 
     function getBurnAddress() external view returns (address);
@@ -56,6 +58,8 @@ interface IIAZOSettings {
     function setMinIAZOLength(uint256 _minLength) external;
 
     function setMinLockPeriod(uint256 _minLockPeriod) external;
+
+    function setMinLiquidityPercent(uint256 _minLiquidityPercent) external;
 
     function setBurnAddress(address _burnAddress) external;
 
