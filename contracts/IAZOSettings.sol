@@ -41,7 +41,6 @@ contract IAZOSettings {
     event UpdateMaxIAZOLength(uint256 previousMaxLength, uint256 newMaxLength);
     event UpdateMinLockPeriod(uint256 previousMinLockPeriod, uint256 newMinLockPeriod);
     event UpdateMinLiquidityPercent(uint256 previousMinLiquidityPercent, uint256 newMinLiquidityPercent);
-    event UpdateBurnAddress(address previousBurnAddress, address newBurnAddress);
 
     Settings public SETTINGS;
 
@@ -55,7 +54,8 @@ contract IAZOSettings {
         SETTINGS.IAZO_TOKEN_FEE = 50;               // .05 (5%) - initial iazo fee %
         SETTINGS.MAX_IAZO_TOKEN_FEE = 300;          // .30 (30%) - max iazo fee %
         SETTINGS.NATIVE_CREATION_FEE = 1e18;        // 1 native token(s)
-        SETTINGS.FEE_ADDRESS = payable(feeAddress); 
+        /// @dev Fee address must be able to receive native currency
+        SETTINGS.FEE_ADDRESS = payable(feeAddress); // Address that receives fees from IAZOs
         SETTINGS.MIN_IAZO_LENGTH = 43200;           // 12 hrs (in seconds)
         SETTINGS.MAX_IAZO_LENGTH = 1814000;         // 3 weeks (in seconds) 
         SETTINGS.MIN_LOCK_PERIOD = 2419000;         // 28 days (in seconds)
@@ -124,60 +124,51 @@ contract IAZOSettings {
     }
 
     function setAdminAddress(address _address) external onlyAdmin {
-        address previousAdmin = SETTINGS.ADMIN_ADDRESS;
+        emit AdminTransferred(SETTINGS.ADMIN_ADDRESS, _address);
         SETTINGS.ADMIN_ADDRESS = _address;
-        emit AdminTransferred(previousAdmin, SETTINGS.ADMIN_ADDRESS);
     }
     
-    function setFeeAddress(address payable _address) external onlyAdmin {
-        address previousFeeAddress = SETTINGS.FEE_ADDRESS;
-        SETTINGS.FEE_ADDRESS = _address;
-        emit UpdateFeeAddress(previousFeeAddress, SETTINGS.FEE_ADDRESS);
+    function setFeeAddress(address payable _feeAddress) external payable onlyAdmin {
+        /// @dev insurance payment to verify _feeAddress can receive native tokens
+        (bool feeAddressSuccess,) = _feeAddress.call{value: 1}("");
+        require(feeAddressSuccess, "_feeAddress native transfer failed");
+        /// @dev return native refund
+        (bool success,) = msg.sender.call{value: msg.value - 1}("");
+        require(success, "_feeAddress native transfer failed");
+        emit UpdateFeeAddress(SETTINGS.FEE_ADDRESS, _feeAddress);
+        SETTINGS.FEE_ADDRESS = _feeAddress;
     }
     
     function setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee) external onlyAdmin {
         require(_baseFee <= SETTINGS.MAX_BASE_FEE, "base fee over max allowable");
-        uint256 previousBaseFee = SETTINGS.BASE_FEE;
-        SETTINGS.BASE_FEE = _baseFee;
-
         require(_iazoTokenFee <= SETTINGS.MAX_IAZO_TOKEN_FEE, "IAZO token fee over max allowable");
-        uint256 previousIAZOTokenFee = SETTINGS.IAZO_TOKEN_FEE;
+        emit UpdateFees(SETTINGS.BASE_FEE, _baseFee, SETTINGS.IAZO_TOKEN_FEE, _iazoTokenFee, SETTINGS.NATIVE_CREATION_FEE, _nativeCreationFee);
+        
+        SETTINGS.BASE_FEE = _baseFee;
         SETTINGS.IAZO_TOKEN_FEE = _iazoTokenFee;
-
-        uint256 previousETHFee = SETTINGS.NATIVE_CREATION_FEE;
         SETTINGS.NATIVE_CREATION_FEE = _nativeCreationFee;
-        emit UpdateFees(previousBaseFee, SETTINGS.BASE_FEE, previousIAZOTokenFee, SETTINGS.IAZO_TOKEN_FEE, previousETHFee, SETTINGS.NATIVE_CREATION_FEE);
     }
 
     function setMaxIAZOLength(uint256 _maxLength) external onlyAdmin {
         require(_maxLength >= SETTINGS.MIN_IAZO_LENGTH);
-        uint256 previousMaxLength = SETTINGS.MAX_IAZO_LENGTH;
+        emit UpdateMaxIAZOLength(SETTINGS.MAX_IAZO_LENGTH, _maxLength);
         SETTINGS.MAX_IAZO_LENGTH = _maxLength;
-        emit UpdateMaxIAZOLength(previousMaxLength, SETTINGS.MAX_IAZO_LENGTH);
     }  
 
     function setMinIAZOLength(uint256 _minLength) external onlyAdmin {
         require(_minLength <= SETTINGS.MAX_IAZO_LENGTH);
-        uint256 previousMinLength = SETTINGS.MIN_IAZO_LENGTH;
+        emit UpdateMinIAZOLength(SETTINGS.MIN_IAZO_LENGTH, _minLength);
         SETTINGS.MIN_IAZO_LENGTH = _minLength;
-        emit UpdateMinIAZOLength(previousMinLength, SETTINGS.MIN_IAZO_LENGTH);
     }   
 
     function setMinLockPeriod(uint256 _minLockPeriod) external onlyAdmin {
-        uint256 previousMinLockPeriod = SETTINGS.MIN_LOCK_PERIOD;
+        emit UpdateMinLockPeriod(SETTINGS.MIN_LOCK_PERIOD, _minLockPeriod);
         SETTINGS.MIN_LOCK_PERIOD = _minLockPeriod;
-        emit UpdateMinLockPeriod(previousMinLockPeriod, SETTINGS.MIN_LOCK_PERIOD);
     }
 
     function setMinLiquidityPercent(uint256 _minLiquidityPercent) external onlyAdmin {
-        uint256 previousMinLiquidityPercent = SETTINGS.MIN_LIQUIDITY_PERCENT;
+        require(_minLiquidityPercent <= 1000);
+        emit UpdateMinLiquidityPercent(SETTINGS.MIN_LIQUIDITY_PERCENT, _minLiquidityPercent);
         SETTINGS.MIN_LIQUIDITY_PERCENT = _minLiquidityPercent;
-        emit UpdateMinLiquidityPercent(previousMinLiquidityPercent, SETTINGS.MIN_LIQUIDITY_PERCENT);
-    }    
-
-    function setBurnAddress(address _burnAddress) external onlyAdmin {
-        address previousBurnAddress = SETTINGS.BURN_ADDRESS;
-        SETTINGS.BURN_ADDRESS = _burnAddress;
-        emit UpdateBurnAddress(previousBurnAddress, SETTINGS.BURN_ADDRESS);
-    }   
+    }      
 }
