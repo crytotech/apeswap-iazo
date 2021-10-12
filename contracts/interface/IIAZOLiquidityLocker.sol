@@ -1,10 +1,9 @@
 //SPDX-License-Identifier: UNLICENSED
 //ALL RIGHTS RESERVED
 //apeswap.finance
+pragma solidity 0.8.6;
 
 import "./ERC20.sol";
-
-pragma solidity 0.8.6;
 
 interface IIAZOLiquidityLocker {
     function APE_FACTORY() external view returns (address);
@@ -19,7 +18,7 @@ interface IIAZOLiquidityLocker {
 
     function transferOwnership(address newOwner) external;
 
-    function apePairIsInitialised(address _token0, address _token1)
+    function apePairIsInitialized(address _token0, address _token1)
         external
         view
         returns (bool);
@@ -29,8 +28,7 @@ interface IIAZOLiquidityLocker {
         ERC20 _saleToken,
         uint256 _baseAmount,
         uint256 _saleAmount,
-        uint256 _unlock_date,
-        address _withdrawer,
-        address _iazoAddress
+        uint256 _unlockDate,
+        address _withdrawer
     ) external returns (address);
 }
