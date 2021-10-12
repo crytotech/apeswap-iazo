@@ -41,13 +41,13 @@
 
 
 
-### `apePairIsInitialised(address _token0, address _token1) → bool` (external)
+### `apePairIsInitialized(address _token0, address _token1) → bool` (external)
 
 
 
 
 
-### `lockLiquidity(contract ERC20 _baseToken, contract ERC20 _saleToken, uint256 _baseAmount, uint256 _saleAmount, uint256 _unlock_date, address _withdrawer, address _iazoAddress) → address` (external)
+### `lockLiquidity(contract ERC20 _baseToken, contract ERC20 _saleToken, uint256 _baseAmount, uint256 _saleAmount, uint256 _unlockDate, address _withdrawer) → address` (external)
 
 
 

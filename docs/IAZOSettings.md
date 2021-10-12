@@ -77,6 +77,12 @@ Settings for new IAZOs
 
 
 
+### `getMinLiquidityPercent() → uint256` (external)
+
+
+
+
+
 ### `getFeeAddress() → address payable` (external)
 
 
@@ -95,7 +101,7 @@ Settings for new IAZOs
 
 
 
-### `setFeeAddress(address payable _address)` (external)
+### `setFeeAddress(address payable _feeAddress)` (external)
 
 
 
@@ -125,7 +131,7 @@ Settings for new IAZOs
 
 
 
-### `setBurnAddress(address _burnAddress)` (external)
+### `setMinLiquidityPercent(uint256 _minLiquidityPercent)` (external)
 
 
 
@@ -168,7 +174,7 @@ Settings for new IAZOs
 
 
 
-### `UpdateBurnAddress(address previousBurnAddress, address newBurnAddress)`
+### `UpdateMinLiquidityPercent(uint256 previousMinLiquidityPercent, uint256 newMinLiquidityPercent)`
 
 
 

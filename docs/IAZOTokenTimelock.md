@@ -21,7 +21,7 @@ after 1 year".
 
 
 
-### `constructor(contract IIAZOSettings settings_, address beneficiary_, uint256 releaseTime_, bool revocable_)` (public)
+### `initialize(contract IIAZOSettings settings_, address beneficiary_, uint256 releaseTime_)` (external)
 
 
 
@@ -63,6 +63,12 @@ Add an address that is eligible to unlock tokens.
 
 
 
+### `removeBeneficiary(address beneficiaryToRemove)` (external)
+
+Remove an address that is eligible to unlock tokens.
+
+
+
 ### `addBeneficiaryInternal(address newBeneficiary)` (internal)
 
 Add an address that is eligible to unlock tokens.
@@ -90,6 +96,12 @@ Allows the owner to revoke the timelock. Tokens already vested
 
 
 ### `BeneficiaryAdded(address newBeneficiary)`
+
+
+
+
+
+### `BeneficiaryRemoved(address beneficiaryToRemove)`
 
 
 

@@ -3,6 +3,7 @@
 Factory to create new IAZOs
 
 
+This contract currently does NOT support non-standard ERC-20 tokens with fees on transfers
 
 
 ### `initialize(contract IIAZO_EXPOSER _iazoExposer, contract IIAZOSettings _iazoSettings, contract IIAZOLiquidityLocker _iazoliquidityLocker, contract IIAZO _iazoInitialImplementation, contract IWNative _wnative, address _admin)` (external)
@@ -19,21 +20,21 @@ Creates new IAZO and adds address to IAZOExposer
 
 
 
-### `getHardCap(uint256 _amount, uint256 _tokenPrice, uint256 _decimals) → uint256` (public)
+### `getHardCap(uint256 _amount, uint256 _tokenPrice) → uint256` (public)
 
 Creates new IAZO and adds address to IAZOExposer
 
 
 
 
-### `getTokensRequired(uint256 _amount, uint256 _tokenPrice, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _decimals) → uint256` (external)
+### `getTokensRequired(uint256 _amount, uint256 _tokenPrice, uint256 _listingPrice, uint256 _liquidityPercent) → uint256` (external)
 
 Check for how many tokens are required for the IAZO including token sale and liquidity.
 
 
 
 
-### `getTokensRequiredInternal(uint256 _amount, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _hardcap, uint256 _decimals, uint256 _IAZOTokenFee) → uint256` (internal)
+### `_getTokensRequired(uint256 _amount, uint256 _tokenPrice, uint256 _listingPrice, uint256 _liquidityPercent, uint256 _iazoTokenFee, bool _require) → uint256` (internal)
 
 
 
@@ -41,22 +42,22 @@ Check for how many tokens are required for the IAZO including token sale and liq
 
 ### `pushIAZOVersion(contract IIAZO _newIAZOImplementation)` (external)
 
-Add and use new IAZO implemetation
+Add and use new IAZO implementation
 
 
 
 
 ### `setIAZOVersion(uint256 _newIAZOVersion)` (external)
 
-Use older IAZO implemetation
+Use older IAZO implementation
 
 
+Owner should be behind a timelock to prevent front running new IAZO deployments
 
 
-### `sweepToken(contract IERC20 token)` (external)
+### `sweepTokens(contract IERC20[] _tokens, address _to)` (external)
 
 A public function to sweep accidental ERC20 transfers to this contract. 
-  Tokens are sent to owner
 
 
 

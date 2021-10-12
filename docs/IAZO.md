@@ -28,6 +28,8 @@ Modifier: Only allow IAZO owner address to call certain functions
 Initialization of IAZO
 
 
+This contract should not be deployed without the factory as important safety checks are made before deployment
+
 
 ### `getIAZOState() → uint256` (public)
 
@@ -77,14 +79,13 @@ Change the max spend limit for a buyer
 
 ### `addLiquidity()` (public)
 
-Final step when IAZO is successfull. lock liquidity and enable withdrawals of sale token.
+Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
 
 
 
-### `sweepToken(contract ERC20 token)` (external)
+### `sweepTokens(contract ERC20[] _tokens, address _to)` (external)
 
 A public function to sweep accidental ERC20 transfers to this contract. 
-  Tokens are sent to owner
 
 
 

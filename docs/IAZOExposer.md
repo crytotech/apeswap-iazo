@@ -54,10 +54,9 @@ Amount of IAZOs created total
 
 
 
-### `sweepToken(contract IERC20 token)` (external)
+### `sweepTokens(contract IERC20[] _tokens, address _to)` (external)
 
 A public function to sweep accidental ERC20 transfers to this contract. 
-  Tokens are sent to owner
 
 
 
@@ -76,6 +75,12 @@ A public function to sweep accidental ERC20 transfers to this contract.
 
 
 ### `LogInit()`
+
+
+
+
+
+### `SweepWithdraw(address _to, contract IERC20 token, uint256 balance)`
 
 
 
