@@ -16,6 +16,7 @@ const IAZOSettings = contract.fromArtifact("IAZOSettings");
 const IAZOExposer = contract.fromArtifact("IAZOExposer");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
+const IAZOTokenTimelock = contract.fromArtifact("IAZOTokenTimelock");
 
 
 describe('IAZO', function () {
@@ -42,6 +43,7 @@ describe('IAZO', function () {
         dexFactory = await ApeFactory.new(feeToSetter);
 
         this.iazoStartTime = (await time.latest()) + 10;
+        this.tokenTimelockImplementation = await IAZOTokenTimelock.new();
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
         const liquidityProxy = await IAZOUpgradeProxy.new(proxyAdmin, liquidityLockerContract.address, '0x');
@@ -50,7 +52,8 @@ describe('IAZO', function () {
             exposer.address, 
             dexFactory.address, 
             settings.address, 
-            adminAddress
+            adminAddress,
+            this.tokenTimelockImplementation.address,
         );
 
         const factoryContract = await IAZOFactory.new();
@@ -125,7 +128,6 @@ describe('IAZO', function () {
             IAZOConfig.tokenPrice, 
             IAZOConfig.listingPrice, 
             IAZOConfig.liquidityPercent,
-            18 // decimals
         );
         const iazoTokenBalance = await iazoToken.balanceOf(currentIazo.address, {from: carol});
         assert.equal(

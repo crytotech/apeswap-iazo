@@ -1,4 +1,4 @@
-const { expectRevert, time, ether } = require('@openzeppelin/test-helpers');
+const { expectRevert, time, ether, balance } = require('@openzeppelin/test-helpers');
 const { accounts, contract } = require('@openzeppelin/test-environment');
 const { expect, assert } = require('chai');
 
@@ -6,7 +6,7 @@ const { expect, assert } = require('chai');
 const IAZOSettings = contract.fromArtifact('IAZOSettings');
 
 describe('IAZOSettingsTest', function () {
-    const [admin, feeAddress, bob] = accounts;
+    const [admin, feeAddress, bob, carol] = accounts;
     let settings;
 
     it("Should set all contract variables", async () => {
@@ -92,21 +92,6 @@ describe('IAZOSettingsTest', function () {
             419000,
         );
     });
-
-    it("Should set and get burn address", async () => {
-        let burnAddress = await settings.getBurnAddress({ from: admin });
-        assert.equal(
-            burnAddress,
-            "0x000000000000000000000000000000000000dEaD",
-        );
-
-        await settings.setBurnAddress(bob, { from: admin });
-        burnAddress = await settings.getBurnAddress({ from: admin });
-        assert.equal(
-            burnAddress,
-            bob,
-        );
-    });
     
     it("Should set and get admin address", async () => {
         let adminAddress = await settings.getAdminAddress({ from: admin });
@@ -129,14 +114,23 @@ describe('IAZOSettingsTest', function () {
             _feeAddress,
             feeAddress,
         );
+        
+        const tracker = await balance.tracker(bob);
 
-        await settings.setFeeAddress(bob, { from: bob });
+        const txReceipt = await settings.setFeeAddress(carol, { from: bob, value: ether('1') });
         _feeAddress = await settings.getFeeAddress({ from: bob });
         assert.equal(
             _feeAddress,
-            bob,
+            carol,
+        );
+
+        const txFee = txReceipt.receipt.gasUsed * 20000000000; // 20 Gwei default gasPrice
+        const balanceDelta = (await tracker.delta()).toNumber() * -1
+
+        assert.equal(
+            balanceDelta - txFee,
+            1,
+            'refund did not appear to work'
         );
     });
-
-    
 });
