@@ -28,18 +28,21 @@ contract IAZOExposer is Ownable {
     address public IAZO_LIQUIDITY_LOCKER;
 
     EnumerableSet.AddressSet private IAZOs;
-
-    mapping(address => uint256) public IAZOAddressToIndex;
     
     mapping(address => address) public IAZOAddressToTokenTimelockAddress;
 
-    bool public isIAZOExposer = true;
+    bool constant public isIAZOExposer = true;
 
-    bool private initialized = false;
+    bool private initialized;
 
     event IAZORegistered(address indexed IAZOContract);
     event IAZOTimelockAdded(address indexed IAZOContract, address indexed TimelockContract);
     event LogInit();
+    event SweepWithdraw(address indexed _to, IERC20 indexed token, uint256 balance);
+
+    constructor() {
+        initialized = false;
+    }
 
     /// @notice Initialization of exposer
     /// @param _iazoFactory The address of the IAZO factory
@@ -57,10 +60,8 @@ contract IAZOExposer is Ownable {
     function registerIAZO(address _iazoAddress) external {
         require(initialized, "not initialized");
         require(msg.sender == IAZO_FACTORY, "Forbidden");
-        uint256 currentIndex = IAZOsLength();
         bool didAdd = IAZOs.add(_iazoAddress);
         if(didAdd) {
-            IAZOAddressToIndex[_iazoAddress] = currentIndex;
             emit IAZORegistered(_iazoAddress);
         }
     }
@@ -91,7 +92,6 @@ contract IAZOExposer is Ownable {
     /// @param _iazoAddress The address of the IAZO
     /// @return Token timelock address
     function getTokenTimelock(address _iazoAddress) external view returns (address){
-        require(IAZOAddressToTokenTimelockAddress[_iazoAddress] != address(0), "No TokenTimelock found");
         return IAZOAddressToTokenTimelockAddress[_iazoAddress];
     }
 
@@ -109,10 +109,14 @@ contract IAZOExposer is Ownable {
     }
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
-    ///   Tokens are sent to owner
-    /// @param token The address of the ERC20 token to sweep
-    function sweepToken(IERC20 token) external onlyOwner {
-        uint256 balance = token.balanceOf(address(this));
-        token.transfer(msg.sender, balance);
+    /// @param _tokens Array of ERC20 addresses to sweep
+    /// @param _to Address to send tokens to
+    function sweepTokens(IERC20[] memory _tokens, address _to) external onlyOwner {
+        for (uint256 index = 0; index < _tokens.length; index++) {
+            IERC20 token = _tokens[index];
+            uint256 balance = token.balanceOf(address(this));
+            token.transfer(_to, balance);
+            emit SweepWithdraw(_to, token, balance);
+        }
     }
 }
