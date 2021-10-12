@@ -16,6 +16,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./interface/ERC20.sol";
 import "./interface/IWNative.sol";
@@ -29,7 +30,7 @@ import "./interface/IIAZOLiquidityLocker.sol";
 /// @title IAZO
 /// @author ApeSwapFinance
 /// @notice IAZO contract where to buy the tokens from
-contract IAZO is Initializable {
+contract IAZO is Initializable, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
     event ForceFailed(address indexed by);
@@ -335,7 +336,7 @@ contract IAZO is Initializable {
     }
 
     /// @notice Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
-    function addLiquidity() public { 
+    function addLiquidity() public nonReentrant { 
         require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');
         uint256 currentIAZOState = getIAZOState();
         // Check if IAZO SUCCESS or HARDCAP met
