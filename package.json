@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "Initial Ape Zone Offering - Self serve initial token offering contracts",
     "main": "truffle-config.js",
+    "resolutions": { "**/ua-parser-js": "^0.7.30" },
     "directories": {
         "test": "test"
     },
