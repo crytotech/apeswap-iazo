@@ -17,6 +17,7 @@ const IAZOSettings = contract.fromArtifact("IAZOSettings");
 const IAZOExposer = contract.fromArtifact("IAZOExposer");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
+const IAZOTokenTimelock = contract.fromArtifact("IAZOTokenTimelock");
 
 
 describe('IAZO native', function () {
@@ -43,6 +44,7 @@ describe('IAZO native', function () {
         dexFactory = await ApeFactory.new(feeToSetter);
 
         this.iazoStartTime = (await time.latest()) + 10;
+        this.tokenTimelockImplementation = await IAZOTokenTimelock.new();
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
         const liquidityProxy = await IAZOUpgradeProxy.new(proxyAdmin, liquidityLockerContract.address, '0x');
@@ -51,7 +53,8 @@ describe('IAZO native', function () {
             exposer.address, 
             dexFactory.address, 
             settings.address, 
-            adminAddress
+            adminAddress,
+            this.tokenTimelockImplementation.address,
         );
 
         const factoryContract = await IAZOFactory.new();
@@ -126,7 +129,6 @@ describe('IAZO native', function () {
             IAZOConfig.tokenPrice, 
             IAZOConfig.listingPrice, 
             IAZOConfig.liquidityPercent,
-            18 // decimals
         );
         const iazoTokenBalance = await iazoToken.balanceOf(currentIazo.address, {from: carol});
         assert.equal(
@@ -186,12 +188,12 @@ describe('IAZO native', function () {
 
         const buyerInfo = await currentIazo.BUYERS.call(alice);
         assert.equal(
-            buyerInfo.deposited,
+            buyerInfo.deposited.toString(),
             "400000000000000000",
             "account deposited check"
         );
         assert.equal(
-            buyerInfo.tokensBought,
+            buyerInfo.tokensBought.toString(),
             "4000000000000000000",
             "account bought check"
         );
@@ -202,12 +204,12 @@ describe('IAZO native', function () {
 
         const buyerInfo = await currentIazo.BUYERS.call(bob);
         assert.equal(
-            buyerInfo.deposited,
+            buyerInfo.deposited.toString(),
             "10000000000000000",
             "account deposited check"
         );
         assert.equal(
-            buyerInfo.tokensBought,
+            buyerInfo.tokensBought.toString(),
             "100000000000000000",
             "account bought check"
         );

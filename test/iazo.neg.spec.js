@@ -11,6 +11,7 @@ const IAZOExposer = contract.fromArtifact("IAZOExposer");
 const ERC20Mock = contract.fromArtifact("ERC20Mock");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
+const IAZOTokenTimelock = contract.fromArtifact("IAZOTokenTimelock");
 
 
 describe("IAZO - Negative Tests", async function() {
@@ -24,6 +25,7 @@ describe("IAZO - Negative Tests", async function() {
     let exposer = null;
     let iazo = null;
     let liquidity = null;
+    let tokenTimelock = null;
 
     let startTimestamp = null;
 
@@ -34,11 +36,12 @@ describe("IAZO - Negative Tests", async function() {
         exposer = await IAZOExposer.new();
         await exposer.transferOwnership(adminAddress);
         settings = await IAZOSettings.new(adminAddress, feeAddress);
+        tokenTimelock = await IAZOTokenTimelock.new();
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
         const liquidityProxy = await IAZOUpgradeProxy.new(proxyAdmin, liquidityLockerContract.address, '0x');
         liquidity = await IAZOLiquidityLocker.at(liquidityProxy.address);
-        await liquidity.initialize(exposer.address, apeFactory, settings.address, adminAddress);
+        await liquidity.initialize(exposer.address, apeFactory, settings.address, adminAddress, tokenTimelock.address);
 
         IAZOFactory.defaults({
             gasPrice: 0,
@@ -71,7 +74,6 @@ describe("IAZO - Negative Tests", async function() {
             iazoDetails.tokenPrice,
             iazoDetails.listingPrice,
             iazoDetails.liquidityPercent,
-            18 // decimals
         )
 
         // 5% of offer tokens + liquidity + sale tokens

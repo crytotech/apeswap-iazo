@@ -18,14 +18,14 @@ pragma solidity 0.8.6;
  * GitHub:          https://github.com/ApeSwapFinance
  */
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import "./OwnableProxy.sol";
 import "./IAZOExposer.sol";
-import "./IAZOTokenTimelock.sol";
+import "./interface/IIAZOTokenTimelock.sol";
 import "./interface/IIAZOSettings.sol";
 
 interface IApeFactory {
@@ -34,72 +34,28 @@ interface IApeFactory {
 }
 
 interface IApePair {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
-
-    function name() external pure returns (string memory);
-    function symbol() external pure returns (string memory);
-    function decimals() external pure returns (uint8);
-    function totalSupply() external view returns (uint);
     function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
-
     function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
-
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-    function PERMIT_TYPEHASH() external pure returns (bytes32);
-    function nonces(address owner) external view returns (uint);
-
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
-
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
-    event Swap(
-        address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
-        address indexed to
-    );
-    event Sync(uint112 reserve0, uint112 reserve1);
-
-    function MINIMUM_LIQUIDITY() external pure returns (uint);
-    function factory() external view returns (address);
-    function token0() external view returns (address);
-    function token1() external view returns (address);
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-    function price0CumulativeLast() external view returns (uint);
-    function price1CumulativeLast() external view returns (uint);
-    function kLast() external view returns (uint);
-
     function mint(address to) external returns (uint liquidity);
-    function burn(address to) external returns (uint amount0, uint amount1);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-    function skim(address to) external;
-    function sync() external;
-
-    function initialize(address, address) external;
 }
 
 /// @title IAZO Liquidity Locker
 /// @author ApeSwapFinance
-/// @notice Locks liquidity on succesful IAZO
-contract IAZOLiquidityLocker is OwnableProxy, Initializable {
+/// @notice Locks liquidity on successful IAZO
+contract IAZOLiquidityLocker is OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     IAZOExposer public IAZO_EXPOSER;
     IApeFactory public APE_FACTORY;
     IIAZOSettings public IAZO_SETTINGS;
+    IIAZOTokenTimelock tokenTimelockImplementation;
 
     // Flag to determine contract type 
     bool constant public isIAZOLiquidityLocker = true;
 
     event IAZOLiquidityLocked(
         address indexed iazo, 
-        IAZOTokenTimelock indexed iazoTokenlockContract, 
+        IIAZOTokenTimelock indexed iazoTokenlockContract, 
         address indexed pairAddress, 
         uint256 totalLPTokensMinted
     );
@@ -109,23 +65,33 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
         uint256 balance
     );
 
-    function initialize (address iazoExposer, address apeFactory, address iazoSettings, address admin) external initializer {
-        _owner = admin;
+    function initialize (
+        address iazoExposer, 
+        address apeFactory, 
+        address iazoSettings, 
+        address admin, 
+        address initialTokenTimelockImplementation
+    ) external initializer {
+        // Set admin as owner
+        __Ownable_init();
+        transferOwnership(admin);
 
         IAZO_EXPOSER = IAZOExposer(iazoExposer);
         APE_FACTORY = IApeFactory(apeFactory);
         IAZO_SETTINGS = IIAZOSettings(iazoSettings);
+        require(IIAZOTokenTimelock(initialTokenTimelockImplementation).isIAZOTokenTimelock(), 'token timelock implementation');
+        tokenTimelockImplementation = IIAZOTokenTimelock(initialTokenTimelockImplementation);
     }
 
     /**
         As anyone can create a pair, and send WETH to it while a IAZO is running, but no one should have access to the IAZO token. If they do and they send it to 
-        the pair, scewing the initial liquidity, this function will return true
+        the pair, screwing the initial liquidity, this function will return true
     */
-    /// @notice Check if the token pair is initialised or not
+    /// @notice Check if the token pair is initialized or not
     /// @param _iazoToken The address of the IAZO token
     /// @param _baseToken The address of the base token
-    /// @return Whether the token pair is initialised or not
-    function apePairIsInitialised(address _iazoToken, address _baseToken) external view returns (bool) {
+    /// @return Whether the token pair is initialized or not
+    function apePairIsInitialized(address _iazoToken, address _baseToken) external view returns (bool) {
         address pairAddress = APE_FACTORY.getPair(_iazoToken, _baseToken);
         if (pairAddress == address(0)) {
             return false;
@@ -138,30 +104,29 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
     }
     
     /// @notice Lock the liquidity of sale and base tokens
+    /// @dev The IIAZOTokenTimelock can have tokens revoked to be released early by the admin. This is a 
+    ///  safety mechanism in case the wrong tokens are sent to the contract.
     /// @param _baseToken The address of the base token
     /// @param _saleToken The address of the IAZO token
     /// @param _baseAmount The amount of base tokens to lock as liquidity
     /// @param _saleAmount The amount of IAZO tokens to lock as liquidity
-    /// @param _unlock_date The date where the liquidity can be unlocked
+    /// @param _unlockDate The date where the liquidity can be unlocked
     /// @param _withdrawer The address which can withdraw the liquidity after unlocked
-    /// @param _iazoAddress The address of the IAZO
     /// @return The address of liquidity pair
     function lockLiquidity(
         IERC20 _baseToken, 
         IERC20 _saleToken, 
         uint256 _baseAmount, 
         uint256 _saleAmount, 
-        uint256 _unlock_date, 
-        address payable _withdrawer,
-        address _iazoAddress
+        uint256 _unlockDate, 
+        address payable _withdrawer
     ) external returns (address) {
         // Must be from a registered IAZO contract
         require(IAZO_EXPOSER.IAZOIsRegistered(msg.sender), 'IAZO NOT REGISTERED');
         // get/setup pair
         address pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
         if (pairAddress == address(0)) {
-            APE_FACTORY.createPair(address(_baseToken), address(_saleToken));
-            pairAddress = APE_FACTORY.getPair(address(_baseToken), address(_saleToken));
+            pairAddress = APE_FACTORY.createPair(address(_baseToken), address(_saleToken));
         }
         IApePair pair = IApePair(pairAddress);
 
@@ -174,25 +139,29 @@ contract IAZOLiquidityLocker is OwnableProxy, Initializable {
         require(totalLPTokensMinted != 0 , "LP creation failed");
 
         // Setup token timelock
-        IAZOTokenTimelock iazoTokenTimelock = new IAZOTokenTimelock(IAZO_SETTINGS, _withdrawer, _unlock_date, true);
+        IIAZOTokenTimelock iazoTokenTimelock = IIAZOTokenTimelock(Clones.clone(address(tokenTimelockImplementation)));
+        iazoTokenTimelock.initialize(IAZO_SETTINGS, _withdrawer, _unlockDate);
         require(iazoTokenTimelock.isIAZOTokenTimelock(), 'token timelock did not deploy correctly');
         require(iazoTokenTimelock.isBeneficiary(_withdrawer), 'improper beneficiary set');
         // Transfer lp tokens into token timelock
         pair.approve(address(iazoTokenTimelock), totalLPTokensMinted);
         iazoTokenTimelock.deposit(IERC20(address(pair)), totalLPTokensMinted);
         // Add token timelock to exposer
-        IAZO_EXPOSER.addTokenTimelock(_iazoAddress, address(iazoTokenTimelock));
+        IAZO_EXPOSER.addTokenTimelock(msg.sender, address(iazoTokenTimelock));
         emit IAZOLiquidityLocked(msg.sender, iazoTokenTimelock, pairAddress, totalLPTokensMinted);
 
         return address(pair);
     }
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
-    ///   Tokens are sent to owner
-    /// @param token The address of the ERC20 token to sweep
-    function sweepToken(IERC20 token) external onlyOwner {
-        uint256 balance = token.balanceOf(address(this));
-        token.safeTransfer(msg.sender, balance);
-        emit SweepWithdraw(msg.sender, token, balance);
+    /// @param _tokens Array of ERC20 addresses to sweep
+    /// @param _to Address to send tokens to
+    function sweepTokens(IERC20[] memory _tokens, address _to) external onlyOwner {
+        for (uint256 index = 0; index < _tokens.length; index++) {
+            IERC20 token = _tokens[index];
+            uint256 balance = token.balanceOf(address(this));
+            token.safeTransfer(_to, balance);
+            emit SweepWithdraw(_to, token, balance);
+        }
     }
 }

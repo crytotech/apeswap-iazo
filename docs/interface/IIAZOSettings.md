@@ -77,6 +77,12 @@
 
 
 
+### `getMinLiquidityPercent() → uint256` (external)
+
+
+
+
+
 ### `getFeeAddress() → address payable` (external)
 
 
@@ -120,6 +126,12 @@
 
 
 ### `setMinLockPeriod(uint256 _minLockPeriod)` (external)
+
+
+
+
+
+### `setMinLiquidityPercent(uint256 _minLiquidityPercent)` (external)
 
 
 

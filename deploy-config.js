@@ -10,6 +10,7 @@ function getNetworkConfig(network, accounts) {
         return {
             proxyAdminAddress: '0xf81A0Ee9BB9606e375aeff30364FfA17Bb8a7FD1', // General Proxy admin 
             adminAddress: '0x6c905b4108A87499CEd1E0498721F2B831c6Ab13', // General Admin
+            // NOTE: feeAddress MUST be able to receive BNB
             feeAddress: '0x6c905b4108A87499CEd1E0498721F2B831c6Ab13', // Address the fees are paid to
             wNative: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
             apeFactory: '0x0841BD0B734E4F5853f0dD8d7Ea041c241fb0Da6',

@@ -12,6 +12,8 @@ const Banana = contract.fromArtifact("Banana");
 const ERC20Mock = contract.fromArtifact("ERC20Mock");
 const IAZOUpgradeProxy = contract.fromArtifact("IAZOUpgradeProxy");
 const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
+const IAZOTokenTimelock = contract.fromArtifact("IAZOTokenTimelock");
+
 
 describe('IAZOFactory - Negative Tests', function () {
     const [proxyAdmin, adminAddress] = accounts;
@@ -23,6 +25,7 @@ describe('IAZOFactory - Negative Tests', function () {
     let iazo = null;
     let admin = null;
     let liquidity = null;
+    let tokenTimelock = null;
 
     beforeEach(async () => {
         this.banana = await ERC20Mock.new();
@@ -34,11 +37,12 @@ describe('IAZOFactory - Negative Tests', function () {
         exposer = await IAZOExposer.new();
         await exposer.transferOwnership(adminAddress);
         settings = await IAZOSettings.new(adminAddress, feeAddress);
+        tokenTimelock = await IAZOTokenTimelock.new();
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
         const liquidityProxy = await IAZOUpgradeProxy.new(proxyAdmin, liquidityLockerContract.address, '0x');
         liquidity = await IAZOLiquidityLocker.at(liquidityProxy.address);
-        await liquidity.initialize(exposer.address, apeFactory, settings.address, adminAddress);
+        await liquidity.initialize(exposer.address, apeFactory, settings.address, adminAddress, tokenTimelock.address);
 
         const factoryContract = await IAZOFactory.new();
         const factoryProxy = await IAZOUpgradeProxy.new(proxyAdmin, factoryContract.address, '0x');
@@ -94,14 +98,14 @@ describe('IAZOFactory - Negative Tests', function () {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
             factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, false, ["2000000000000000000", "999", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
-            "Minimum divisibility"
+            "amount is less than minimum divisibility"
         );
     });
     it("Should revert iazo creation, invalid token price", async () => {
         const iazoStartTime = (await time.latest()) + 10;
         await expectRevert(
             factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, false, ["0", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 }),
-            "Invalid token price"
+            "hardcap cannot be zero, please check the token price"
         );
     });
     it("Should revert iazo creation, percentage liquidity too low", async () => {

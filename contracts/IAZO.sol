@@ -16,6 +16,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./interface/ERC20.sol";
 import "./interface/IWNative.sol";
@@ -29,7 +30,7 @@ import "./interface/IIAZOLiquidityLocker.sol";
 /// @title IAZO
 /// @author ApeSwapFinance
 /// @notice IAZO contract where to buy the tokens from
-contract IAZO is Initializable {
+contract IAZO is Initializable, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
     event ForceFailed(address indexed by);
@@ -51,13 +52,19 @@ contract IAZO is Initializable {
         ERC20 IAZO_TOKEN; // token offered for IAZO
         ERC20 BASE_TOKEN; // token to buy IAZO_TOKEN
         bool IAZO_SALE_IN_NATIVE; // IAZO sale in NATIVE or ERC20.
-        uint256 TOKEN_PRICE; // cost for 1 IAZO_TOKEN in BASE_TOKEN (or NATIVE)
+        /// @dev To account for tokens with different decimals values the TOKEN_PRICE/LISTING_PRICE need to account for that
+        /// Find the amount of tokens in BASE_TOKENS that 1 IAZO_TOKEN costs and use the equation below to find the TOKEN_PRICE
+        /// TOKEN_PRICE = BASE_TOKEN_AMOUNT * 10**(18 - iazoTokenDecimals)
+        /// i.e. 1 IAZO 8 decimal token (1e8) = 1 BASE_TOKEN 18 decimal token (1e18): TOKEN_PRICE = 1e28
+        uint256 TOKEN_PRICE; // BASE_TOKEN_AMOUNT * 10**(18 - iazoTokenDecimals)
         uint256 AMOUNT; // amount of IAZO_TOKENS for sale
         uint256 HARDCAP; // hardcap of earnings.
         uint256 SOFTCAP; // softcap for earning. if not reached IAZO is cancelled 
         uint256 MAX_SPEND_PER_BUYER; // max spend per buyer
         uint256 LIQUIDITY_PERCENT; // 1 = 0.1%
-        uint256 LISTING_PRICE; // fixed rate at which the token will list on apeswap
+        /// @dev Find the amount of tokens in BASE_TOKENS that 1 IAZO_TOKEN will be listed for and use the equation below to find the LISTING_PRICE
+        /// LISTING_PRICE = BASE_TOKEN_AMOUNT * 10**(18 - iazoTokenDecimals)
+        uint256 LISTING_PRICE; // BASE_TOKEN_AMOUNT * 10**(18 - iazoTokenDecimals)
         bool BURN_REMAINS;
     }
 
@@ -68,7 +75,7 @@ contract IAZO is Initializable {
     }
 
     struct IAZOStatus {
-        bool LP_GENERATION_COMPLETE; // final flag required to end a iazo and enable withdrawls
+        bool LP_GENERATION_COMPLETE; // final flag required to end a iazo and enable withdrawals
         bool FORCE_FAILED; // set this flag to force fail the iazo
         uint256 TOTAL_BASE_COLLECTED; // total base currency raised (usually ETH)
         uint256 TOTAL_TOKENS_SOLD; // total iazo tokens sold
@@ -102,16 +109,18 @@ contract IAZO is Initializable {
     /// @dev reference variable
     address public IAZO_FACTORY;
     // addresses
-    address public TOKEN_LOCK_ADDRESS = 0x0000000000000000000000000000000000000000;
+    address public TOKEN_LOCK_ADDRESS;
     // BuyerInfo mapping
     mapping(address => BuyerInfo) public BUYERS;
 
-    // _addresses = [IAZOSettings, IAZOLiquidityLocker]
-    // _addressesPayable = [IAZOOwner, feeAddress]
-    // _uint256s = [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startTime, _activeTime, _lockPeriod, _baseFee, iazoTokenFee]
-    // _bools = [_burnRemains]
-    // _ERC20s = [_iazoToken, _baseToken]
     /// @notice Initialization of IAZO
+    /// @dev This contract should not be deployed without the factory as important safety checks are made before deployment
+    /// @param _addresses [IAZOSettings, IAZOLiquidityLocker]
+    /// @param _addressesPayable [IAZOOwner, feeAddress]
+    /// @param _uint256s [_tokenPrice,  _amount, _hardcap,  _softcap, _maxSpendPerBuyer, _liquidityPercent, _listingPrice, _startTime, _activeTime, _lockPeriod, _baseFee, iazoTokenFee]
+    /// @param _bools [_burnRemains]
+    /// @param _ERC20s [_iazoToken, _baseToken]
+    /// @param _wnative Address of the Wrapped Native token for the chain
     function initialize(
         address[2] memory _addresses, 
         address payable[2] memory _addressesPayable, 
@@ -133,7 +142,7 @@ contract IAZO is Initializable {
         IAZO_INFO.TOKEN_PRICE = _uint256s[0]; // Price of time in base currency
         IAZO_INFO.AMOUNT = _uint256s[1]; // Amount of tokens for sale
         IAZO_INFO.HARDCAP = _uint256s[2]; // Hardcap base token to collect (TOKEN_PRICE * AMOUNT)
-        IAZO_INFO.SOFTCAP = _uint256s[3]; // Minimum amount of base tokens to collect for succesfull IAZO
+        IAZO_INFO.SOFTCAP = _uint256s[3]; // Minimum amount of base tokens to collect for successful IAZO
         IAZO_INFO.MAX_SPEND_PER_BUYER = _uint256s[4]; // Max amount of base tokens that can be used to purchase IAZO token per account
         IAZO_INFO.LIQUIDITY_PERCENT = _uint256s[5]; // Percentage of liquidity to lock after IAZO
         IAZO_INFO.LISTING_PRICE = _uint256s[6]; // The rate to be listed for liquidity
@@ -200,37 +209,38 @@ contract IAZO is Initializable {
     /// @notice Internal function used to buy IAZO tokens in either native coin or base token
     /// @param _amount Amount of base tokens to use to buy IAZO tokens for
     function userDepositPrivate (uint256 _amount) private {
+        require(_amount > 0, 'deposit amount must be greater than zero');
         // Check that IAZO is in the ACTIVE state for user deposits
         require(getIAZOState() == 1, 'IAZO not active');
         BuyerInfo storage buyer = BUYERS[msg.sender];
 
-        uint256 amount_in = IAZO_INFO.IAZO_SALE_IN_NATIVE ? msg.value : _amount;
         uint256 allowance = IAZO_INFO.MAX_SPEND_PER_BUYER - buyer.deposited;
         uint256 remaining = IAZO_INFO.HARDCAP - STATUS.TOTAL_BASE_COLLECTED;
         allowance = allowance > remaining ? remaining : allowance;
-        if (amount_in > allowance) {
-            amount_in = allowance;
+        uint256 allowedAmount = _amount;
+        if (_amount > allowance) {
+            allowedAmount = allowance;
         }
 
-        uint256 tokensSold = amount_in * (10 ** uint256(IAZO_INFO.IAZO_TOKEN.decimals())) / IAZO_INFO.TOKEN_PRICE;
+        uint256 tokensSold = (allowedAmount * 1e18) / IAZO_INFO.TOKEN_PRICE;
         require(tokensSold > 0, '0 tokens bought');
         if (buyer.deposited == 0) {
             STATUS.NUM_BUYERS++;
         }
-        buyer.deposited += amount_in;
+        buyer.deposited += allowedAmount;
         buyer.tokensBought += tokensSold;
-        STATUS.TOTAL_BASE_COLLECTED += amount_in;
+        STATUS.TOTAL_BASE_COLLECTED += allowedAmount;
         STATUS.TOTAL_TOKENS_SOLD += tokensSold;
         
         // return unused NATIVE tokens
-        if (IAZO_INFO.IAZO_SALE_IN_NATIVE && amount_in < msg.value) {
-            payable(msg.sender).transfer(msg.value - amount_in);
+        if (IAZO_INFO.IAZO_SALE_IN_NATIVE && allowedAmount < msg.value) {
+            transferNativeCurrencyPrivate(payable(msg.sender), msg.value - allowedAmount);
         }
         // deduct non NATIVE token from user
         if (!IAZO_INFO.IAZO_SALE_IN_NATIVE) {
-            IAZO_INFO.BASE_TOKEN.safeTransferFrom(msg.sender, address(this), amount_in);
+            IAZO_INFO.BASE_TOKEN.safeTransferFrom(msg.sender, address(this), allowedAmount);
         }
-        emit UserDeposited(msg.sender, amount_in);
+        emit UserDeposited(msg.sender, allowedAmount);
     }
 
     /// @notice The function users call to withdraw funds
@@ -274,11 +284,16 @@ contract IAZO is Initializable {
         buyer.deposited = 0;
         
         if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-            payable(msg.sender).transfer(tokensToTransfer);
+            transferNativeCurrencyPrivate(payable(msg.sender), tokensToTransfer);
         } else {
             IAZO_INFO.BASE_TOKEN.safeTransfer(msg.sender, tokensToTransfer);
         }
         emit UserWithdrawFailed(msg.sender, tokensToTransfer);
+    }
+
+    function transferNativeCurrencyPrivate(address payable _to, uint256 _value) private {
+        (bool success,) = _to.call{value: _value}("");
+        require(success, "failed to send native currency");
     }
 
     /**
@@ -286,6 +301,8 @@ contract IAZO is Initializable {
      */
 
     function forceFailAdmin() external onlyAdmin {
+        /// @notice Cannot fail IAZO after liquidity has been added
+        require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');
         STATUS.FORCE_FAILED = true;
         emit ForceFailed(msg.sender);
     }
@@ -300,7 +317,8 @@ contract IAZO is Initializable {
     function updateStart(uint256 _startTime, uint256 _activeTime) external onlyIAZOOwner {
         require(IAZO_TIME_INFO.START_TIME > block.timestamp, "IAZO has already started");
         require(_startTime > block.timestamp, "Start time must be in future");
-        require(_activeTime >= IAZO_SETTINGS.getMinIAZOLength(), "Active iazo not long enough");
+        require(_activeTime >= IAZO_SETTINGS.getMinIAZOLength(), "IAZO active time is too short");
+        require(_activeTime <= IAZO_SETTINGS.getMaxIAZOLength(), "IAZO active time is too long");
         uint256 previousStartTime = IAZO_TIME_INFO.START_TIME;
         IAZO_TIME_INFO.START_TIME = _startTime;
 
@@ -317,15 +335,18 @@ contract IAZO is Initializable {
         emit UpdateMaxSpendLimit(previousMaxSpend, IAZO_INFO.MAX_SPEND_PER_BUYER);
     }
 
-    /// @notice Final step when IAZO is successfull. lock liquidity and enable withdrawals of sale token.
-    function addLiquidity() public { 
+    /// @notice Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
+    function addLiquidity() public nonReentrant { 
         require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');
         uint256 currentIAZOState = getIAZOState();
-        // Check if IAZO SUCCESS or HARDCAT met
+        // Check if IAZO SUCCESS or HARDCAP met
         require(currentIAZOState == 2 || currentIAZOState == 3, 'IAZO failed or still in progress'); // SUCCESS
 
-        // If pair for this token has already been initalized, then this will fail the IAZO
-        if (IAZO_LIQUIDITY_LOCKER.apePairIsInitialised(address(IAZO_INFO.IAZO_TOKEN), address(IAZO_INFO.BASE_TOKEN))) {
+        ERC20 iazoToken = IAZO_INFO.IAZO_TOKEN;
+        ERC20 baseToken = IAZO_INFO.BASE_TOKEN;
+
+        // If pair for this token has already been initialized, then this will fail the IAZO
+        if (IAZO_LIQUIDITY_LOCKER.apePairIsInitialized(address(iazoToken), address(baseToken))) {
             STATUS.FORCE_FAILED = true;
             return;
         }
@@ -335,58 +356,62 @@ contract IAZO is Initializable {
         uint256 apeswapIAZOTokenFee = STATUS.TOTAL_TOKENS_SOLD * FEE_INFO.IAZO_TOKEN_FEE / 1000;
                 
         // base token liquidity
-        uint256 baseLiquidity = STATUS.TOTAL_BASE_COLLECTED  * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
+        uint256 baseLiquidity = STATUS.TOTAL_BASE_COLLECTED * IAZO_INFO.LIQUIDITY_PERCENT / 1000;
         
-        // deposit NATIVE to recieve WNative tokens
-        if (IAZO_INFO.IAZO_SALE_IN_NATIVE) {
+        bool saleInNativeCurrency = IAZO_INFO.IAZO_SALE_IN_NATIVE;
+
+        // deposit NATIVE to receive WNative tokens
+        if (saleInNativeCurrency) {
             WNative.deposit{value : baseLiquidity}();
         }
 
-        IAZO_INFO.BASE_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), baseLiquidity);
+        baseToken.approve(address(IAZO_LIQUIDITY_LOCKER), baseLiquidity);
 
         // sale token liquidity
-        uint256 saleTokenLiquidity = baseLiquidity * (10 ** IAZO_INFO.IAZO_TOKEN.decimals()) / IAZO_INFO.LISTING_PRICE;
-        IAZO_INFO.IAZO_TOKEN.approve(address(IAZO_LIQUIDITY_LOCKER), saleTokenLiquidity);
+        uint256 saleTokenLiquidity = (baseLiquidity * 1e18) / IAZO_INFO.LISTING_PRICE;
+        iazoToken.approve(address(IAZO_LIQUIDITY_LOCKER), saleTokenLiquidity);
+
+        address payable feeAddress = FEE_INFO.FEE_ADDRESS;
+        address payable iazoOwner = IAZO_INFO.IAZO_OWNER;
 
         address newTokenLockContract = IAZO_LIQUIDITY_LOCKER.lockLiquidity(
-            IAZO_INFO.BASE_TOKEN, 
-            IAZO_INFO.IAZO_TOKEN, 
+            baseToken, 
+            iazoToken, 
             baseLiquidity, 
             saleTokenLiquidity, 
             block.timestamp + IAZO_TIME_INFO.LOCK_PERIOD, 
-            IAZO_INFO.IAZO_OWNER,
-            address(this)
+            iazoOwner
         );
         TOKEN_LOCK_ADDRESS = newTokenLockContract;
 
         STATUS.LP_GENERATION_COMPLETE = true;
 
-        if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-            FEE_INFO.FEE_ADDRESS.transfer(apeswapBaseFee);
+        if(saleInNativeCurrency){
+            transferNativeCurrencyPrivate(feeAddress, apeswapBaseFee);
         } else { 
-            IAZO_INFO.BASE_TOKEN.safeTransfer(FEE_INFO.FEE_ADDRESS, apeswapBaseFee);
+            baseToken.safeTransfer(feeAddress, apeswapBaseFee);
         }
-        IAZO_INFO.IAZO_TOKEN.safeTransfer(FEE_INFO.FEE_ADDRESS, apeswapIAZOTokenFee);
-        emit FeesCollected(FEE_INFO.FEE_ADDRESS, apeswapBaseFee, apeswapIAZOTokenFee);
+        iazoToken.safeTransfer(feeAddress, apeswapIAZOTokenFee);
+        emit FeesCollected(feeAddress, apeswapBaseFee, apeswapIAZOTokenFee);
 
         // send remaining iazo tokens to iazo owner
-        uint256 remainingIAZOTokenBalance = IAZO_INFO.IAZO_TOKEN.balanceOf(address(this));
+        uint256 remainingIAZOTokenBalance = iazoToken.balanceOf(address(this));
         if (remainingIAZOTokenBalance > STATUS.TOTAL_TOKENS_SOLD) {
             uint256 amountLeft = remainingIAZOTokenBalance - STATUS.TOTAL_TOKENS_SOLD;
             if(IAZO_INFO.BURN_REMAINS){
-                IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_SETTINGS.getBurnAddress(), amountLeft);
+                iazoToken.safeTransfer(IAZO_SETTINGS.getBurnAddress(), amountLeft);
             } else {
-                IAZO_INFO.IAZO_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, amountLeft);
+                iazoToken.safeTransfer(iazoOwner, amountLeft);
             }
         }
         
         // send remaining base tokens to iazo owner
-        uint256 remainingBaseBalance = IAZO_INFO.IAZO_SALE_IN_NATIVE ? address(this).balance : IAZO_INFO.BASE_TOKEN.balanceOf(address(this));
+        uint256 remainingBaseBalance = saleInNativeCurrency ? address(this).balance : baseToken.balanceOf(address(this));
         
-        if(IAZO_INFO.IAZO_SALE_IN_NATIVE){
-            IAZO_INFO.IAZO_OWNER.transfer(remainingBaseBalance);
+        if(saleInNativeCurrency) {
+            transferNativeCurrencyPrivate(iazoOwner, remainingBaseBalance);
         } else {
-            IAZO_INFO.BASE_TOKEN.safeTransfer(IAZO_INFO.IAZO_OWNER, remainingBaseBalance);
+            baseToken.safeTransfer(iazoOwner, remainingBaseBalance);
         }
         
         emit AddLiquidity(baseLiquidity, saleTokenLiquidity, remainingBaseBalance);
@@ -394,13 +419,16 @@ contract IAZO is Initializable {
     }
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
-    ///   Tokens are sent to owner
-    /// @param token The address of the ERC20 token to sweep
-    function sweepToken(ERC20 token) external onlyAdmin {
-        require(token != IAZO_INFO.IAZO_TOKEN, "cannot sweep IAZO_TOKEN");
-        require(token != IAZO_INFO.BASE_TOKEN, "cannot sweep BASE_TOKEN");
-        uint256 balance = token.balanceOf(address(this));
-        token.safeTransfer(msg.sender, balance);
-        emit SweepWithdraw(msg.sender, token, balance);
+    /// @param _tokens Array of ERC20 addresses to sweep
+    /// @param _to Address to send tokens to
+    function sweepTokens(ERC20[] memory _tokens, address _to) external onlyAdmin {
+        for (uint256 index = 0; index < _tokens.length; index++) {
+            ERC20 token = _tokens[index];
+            require(token != IAZO_INFO.IAZO_TOKEN, "cannot sweep IAZO_TOKEN");
+            require(token != IAZO_INFO.BASE_TOKEN, "cannot sweep BASE_TOKEN");
+            uint256 balance = token.balanceOf(address(this));
+            token.safeTransfer(_to, balance);
+            emit SweepWithdraw(_to, token, balance);
+        }
     }
 }
