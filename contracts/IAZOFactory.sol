@@ -135,6 +135,7 @@ contract IAZOFactory is OwnableUpgradeable {
         uint256[9] memory _uint_params
     ) external payable {
         require(_IAZOOwner != address(0), "IAZO Owner cannot be address(0)");
+        require(_IAZOToken != _baseToken, "IAZO token and base token are the same");
         require(address(_baseToken) != address(0), "Base token cannot be address(0)");
         IAZOParams memory params;
         params.TOKEN_PRICE = _uint_params[0];
