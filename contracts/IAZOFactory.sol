@@ -168,7 +168,7 @@ contract IAZOFactory is OwnableUpgradeable {
             address(this).balance
         );
 
-        require(params.START_TIME > block.timestamp, "iazo should start in future");
+        require(params.START_TIME >= IAZO_SETTINGS.getMinStartTime(), "start delay too short");
         require(
             params.ACTIVE_TIME >= IAZO_SETTINGS.getMinIAZOLength(), 
             "iazo length not long enough"

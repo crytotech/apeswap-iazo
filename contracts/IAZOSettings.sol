@@ -34,15 +34,22 @@ contract IAZOSettings {
         uint256 MIN_LIQUIDITY_PERCENT;
     }
 
+    struct DelaySettings {
+        uint256 START_DELAY; // minium time away from creation that the iazo can start
+        uint256 MAX_START_DELAY; // minium time away from creation that the iazo can start
+    }
+
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
     event UpdateFeeAddress(address indexed previousFeeAddress, address indexed newFeeAddress);
     event UpdateFees(uint256 previousBaseFee, uint256 newBaseFee, uint256 previousIAZOTokenFee, uint256 newIAZOTokenFee, uint256 previousETHFee, uint256 newETHFee);
+    event UpdateStartDelay(uint256 previousStartDelay, uint256 newStartDelay);
     event UpdateMinIAZOLength(uint256 previousMinLength, uint256 newMinLength);
     event UpdateMaxIAZOLength(uint256 previousMaxLength, uint256 newMaxLength);
     event UpdateMinLockPeriod(uint256 previousMinLockPeriod, uint256 newMinLockPeriod);
     event UpdateMinLiquidityPercent(uint256 previousMinLiquidityPercent, uint256 newMinLiquidityPercent);
 
     Settings public SETTINGS;
+    DelaySettings public DELAY_SETTINGS;
 
     bool constant public isIAZOSettings = true;
     
@@ -56,6 +63,8 @@ contract IAZOSettings {
         SETTINGS.NATIVE_CREATION_FEE = 1e18;        // 1 native token(s)
         /// @dev Fee address must be able to receive native currency
         SETTINGS.FEE_ADDRESS = payable(feeAddress); // Address that receives fees from IAZOs
+        DELAY_SETTINGS.START_DELAY = 604800;               // 7 days (in seconds)
+        DELAY_SETTINGS.MAX_START_DELAY = 2419000;         // 28 days (in seconds)
         SETTINGS.MIN_IAZO_LENGTH = 43200;           // 12 hrs (in seconds)
         SETTINGS.MAX_IAZO_LENGTH = 1814000;         // 3 weeks (in seconds) 
         SETTINGS.MIN_LOCK_PERIOD = 2419000;         // 28 days (in seconds)
@@ -77,6 +86,10 @@ contract IAZOSettings {
 
     function isAdmin(address toCheck) external view returns (bool) {
         return SETTINGS.ADMIN_ADDRESS == toCheck;
+    }
+
+    function getMinStartTime() external view returns (uint256) {
+        return DELAY_SETTINGS.START_DELAY + block.timestamp;
     }
 
     function getMaxIAZOLength() external view returns (uint256) {
@@ -148,6 +161,12 @@ contract IAZOSettings {
         SETTINGS.IAZO_TOKEN_FEE = _iazoTokenFee;
         SETTINGS.NATIVE_CREATION_FEE = _nativeCreationFee;
     }
+
+    function setStartDelay(uint256 _newStartDelay) external onlyAdmin {
+        require(_newStartDelay <= DELAY_SETTINGS.MAX_START_DELAY);
+        emit UpdateStartDelay(DELAY_SETTINGS.START_DELAY, _newStartDelay);
+        DELAY_SETTINGS.START_DELAY = _newStartDelay;
+    } 
 
     function setMaxIAZOLength(uint256 _maxLength) external onlyAdmin {
         require(_maxLength >= SETTINGS.MIN_IAZO_LENGTH);

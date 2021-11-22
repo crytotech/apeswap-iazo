@@ -25,6 +25,8 @@ interface IIAZOSettings {
 
     function isAdmin(address toCheck) external view returns (bool);
 
+    function getMinStartTime() external view returns (uint256);
+
     function getMaxIAZOLength() external view returns (uint256);
 
     function getMinIAZOLength() external view returns (uint256);
@@ -52,6 +54,8 @@ interface IIAZOSettings {
     function setFeeAddresses(address _address) external;
 
     function setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee) external;
+
+    function setStartDelay(uint256 _maxLength) external;
 
     function setMaxIAZOLength(uint256 _maxLength) external;
 
