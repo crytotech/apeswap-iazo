@@ -1,12 +1,13 @@
 const IAZOFactory = artifacts.require("IAZOFactory");
 const IAZOSettings = artifacts.require("IAZOSettings");
+const IAZOSettingsMock = artifacts.require("IAZOSettingsMock");
 const IAZOExposer = artifacts.require("IAZOExposer");
 const IAZO = artifacts.require("IAZO");
 const IAZOLiquidityLocker = artifacts.require("IAZOLiquidityLocker");
 const IAZOUpgradeProxy = artifacts.require("IAZOUpgradeProxy");
 const IAZOTokenTimelock = artifacts.require("IAZOTokenTimelock");
 
-const { getNetworkConfig } = require("../deploy-config");
+const { getNetworkConfig, isDevelopmentNetwork } = require("../deploy-config");
 
 
 module.exports = async function (deployer, network, accounts) {
@@ -17,7 +18,15 @@ module.exports = async function (deployer, network, accounts) {
   const iazoExposer = await deployer.deploy(IAZOExposer);
   await iazoExposer.transferOwnership(adminAddress);
 
-  await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
+  let iazoSettings;
+  if (isDevelopmentNetwork(network)) {
+    await deployer.deploy(IAZOSettingsMock, adminAddress, feeAddress);
+    iazoSettings = await IAZOSettingsMock.at(IAZOSettingsMock.address);
+  } else {
+    await deployer.deploy(IAZOSettings, adminAddress, feeAddress);
+    iazoSettings = await IAZOSettings.at(IAZOSettings.address);
+  }
+
   // Deploy dummy token timelock for verification purposes
   await deployer.deploy(IAZOTokenTimelock);
   await deployer.deploy(IAZOLiquidityLocker);
@@ -59,7 +68,7 @@ module.exports = async function (deployer, network, accounts) {
     [
       IAZOExposer.address,
       apeFactory,
-      IAZOSettings.address,
+      iazoSettings.address,
       adminAddress,
       IAZOTokenTimelock.address
     ]
@@ -112,7 +121,7 @@ module.exports = async function (deployer, network, accounts) {
     },
     [
       IAZOExposer.address,
-      IAZOSettings.address,
+      iazoSettings.address,
       IAZOLiquidityLocker.address,
       IAZO.address,
       wNative,
@@ -126,7 +135,7 @@ module.exports = async function (deployer, network, accounts) {
 
   console.dir({
     IAZOExposer: IAZOExposer.address,
-    IAZOSettings: IAZOSettings.address,
+    IAZOSettings: iazoSettings.address,
     IAZOLiquidityLocker: IAZOLiquidityLocker.address,
     IAZOLiquidityLockerProxy: liquidityLockerAddress,
     IAZOFactory: IAZOFactory.address,
