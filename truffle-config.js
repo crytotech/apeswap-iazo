@@ -18,11 +18,22 @@
  *
  */
 
- const HDWalletProvider = require('@truffle/hdwallet-provider');
- require('dotenv').config();
- 
- const MAINNET_DEPLOYER_KEY = process.env.MAINNET_DEPLOYER_KEY;
- const TESTNET_DEPLOYER_KEY = process.env.TESTNET_DEPLOYER_KEY;
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+require('dotenv').config();
+
+/**
+* Pass in an array of RPC urls to grab a random one on each run
+* 
+* @param {*} rpcUrlArray 
+* @returns rpcUrl
+*/
+function getRandomRPC(rpcUrlArray) {
+  // Using `| 0` here in place of Math.floor()
+  return rpcUrlArray[(Math.random() * rpcUrlArray.length) | 0]
+}
+
+const MAINNET_DEPLOYER_KEY = process.env.MAINNET_DEPLOYER_KEY;
+const TESTNET_DEPLOYER_KEY = process.env.TESTNET_DEPLOYER_KEY;
 
 module.exports = {
   /**
@@ -49,14 +60,31 @@ module.exports = {
       gas: 6721975
     },
     bsc: {
-      provider: () => new HDWalletProvider(MAINNET_DEPLOYER_KEY, `https://bsc-dataseed1.binance.org`),
+      provider: () => new HDWalletProvider(
+        MAINNET_DEPLOYER_KEY,
+        getRandomRPC([
+          `https://bsc-dataseed.binance.org`,
+          `https://bsc-dataseed1.defibit.io`,
+          `https://bsc-dataseed1.ninicoin.io`,
+        ])
+      ),
       network_id: 56,
       confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: false
     },
     "bsc-testnet": {
-      provider: () => new HDWalletProvider(TESTNET_DEPLOYER_KEY, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      provider: () => new HDWalletProvider(
+        TESTNET_DEPLOYER_KEY, 
+        getRandomRPC([
+          // `https://data-seed-prebsc-1-s1.binance.org:8545`,
+          // `https://data-seed-prebsc-2-s1.binance.org:8545`,
+          // `https://data-seed-prebsc-1-s2.binance.org:8545`,
+          // `https://data-seed-prebsc-2-s2.binance.org:8545`,
+          `https://data-seed-prebsc-1-s3.binance.org:8545`,
+          // `https://data-seed-prebsc-2-s3.binance.org:8545`,
+        ])
+      ),
       network_id: 97,
       confirmations: 2,
       timeoutBlocks: 200,
@@ -110,10 +138,10 @@ module.exports = {
       version: "0.8.6",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
-       optimizer: {
-         enabled: true,
-         runs: 200
-       },
+      optimizer: {
+        enabled: true,
+        runs: 200
+      },
       //  evmVersion: "byzantium"
       // }
     }

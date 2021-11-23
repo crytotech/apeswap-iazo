@@ -4,8 +4,35 @@
 //     wNative: string;
 // }
 
+const isBscMainnet = (network) => ["bsc", "bsc-fork"].includes(network);
+const isBscTestnet = (network) => ['bsc-testnet', 'bsc-testnet-fork'].includes(network);
+const isDevelopment = (network) => ['development'].includes(network);
+
+function isMainnet(network) {
+    if (isBscMainnet(network)) {
+        console.log(`This network is evaluated to be a MAINNET network.`)
+        return true;
+    } else {
+        console.log(`This network is evaluated to be a DEVELOPMENT/TESTNET network.`)
+        return false;
+    }
+}
+
+function isDevelopmentNetwork(network) {
+    if (
+        isBscTestnet(network) ||
+        isDevelopment(network)
+    ) {
+        console.log(`This network is evaluated to be a DEVELOPMENT/TESTNET network.`)
+        return true;
+    } else {
+        console.log(`This network is evaluated to be a MAINNET network.`)
+        return false;
+    }
+}
+
 function getNetworkConfig(network, accounts) {
-    if (["bsc", "bsc-fork"].includes(network)) {
+    if (isBscMainnet(network)) {
         console.log(`Deploying with BSC MAINNET config.`)
         return {
             proxyAdminAddress: '0xf81A0Ee9BB9606e375aeff30364FfA17Bb8a7FD1', // General Proxy admin 
@@ -15,7 +42,7 @@ function getNetworkConfig(network, accounts) {
             wNative: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
             apeFactory: '0x0841BD0B734E4F5853f0dD8d7Ea041c241fb0Da6',
         }
-    } else if (['bsc-testnet', 'bsc-testnet-fork'].includes(network)) {
+    } else if (isBscTestnet(network)) {
         console.log(`Deploying with BSC testnet config.`)
         return {
             proxyAdminAddress: '0x56Cb8F9199A8F43933cAE300Ef548dfA4ADE7Da0',
@@ -24,7 +51,7 @@ function getNetworkConfig(network, accounts) {
             wNative: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd',
             apeFactory: '0x152349604d49c2Af10ADeE94b918b051104a143E',
         }
-    } else if (['development'].includes(network)) {
+    } else if (isDevelopment(network)) {
         console.log(`Deploying with development config.`)
         return {
             proxyAdminAddress: accounts[2],
@@ -38,4 +65,4 @@ function getNetworkConfig(network, accounts) {
     }
 }
 
-module.exports = { getNetworkConfig };
+module.exports = { getNetworkConfig, isBscMainnet, isDevelopmentNetwork };
