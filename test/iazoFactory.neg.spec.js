@@ -51,7 +51,7 @@ describe('IAZOFactory - Negative Tests', function () {
     });
 
     it("Should revert iazo creation, exceeds balance", async () => {
-        const iazoStartTime = (await time.latest()).toNumber() + 604800;
+        const iazoStartTime = (await time.latest()).toNumber() + 614800;
         await expectRevert(
             factory.createIAZO(accounts[1], this.banana.address, this.baseToken.address, false, ["2000000000000000000", "1000000000000000000000000", "1000000000000000000000", iazoStartTime, 43201, 2419000, "2000000000000000000000000", 300, 0], { from: accounts[1], value: 1000000000000000000 },),
             'ERC20: transfer amount exceeds balance.'
