@@ -81,7 +81,7 @@ contract IAZOSettingsMock {
         SETTINGS.NATIVE_CREATION_FEE = 1e12; // .000001 native token(s) // NOTE: for testing purposes
         /// @dev Fee address must be able to receive native currency
         SETTINGS.FEE_ADDRESS = payable(feeAddress); // Address that receives fees from IAZOs
-        DELAY_SETTINGS.START_DELAY = 604800; // 7 days (in seconds)
+        DELAY_SETTINGS.START_DELAY = 60; // 60 seconds
         DELAY_SETTINGS.MAX_START_DELAY = 2419000; // 28 days (in seconds)
         SETTINGS.MIN_IAZO_LENGTH = 60; //  1 min // NOTE: For testing purposes
         SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds)
