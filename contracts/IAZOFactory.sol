@@ -182,10 +182,10 @@ contract IAZOFactory is OwnableUpgradeable {
         ///   to handle percent and liquidity calculations.
         require(params.AMOUNT >= 10000, "amount is less than minimum divisibility");
         // Find the hard cap of the offering in base tokens
-        uint256 hardcap = getHardCap(params.AMOUNT, params.TOKEN_PRICE);
-        require(hardcap > 0, 'hardcap cannot be zero, please check the token price');
+        params.HARDCAP = getHardCap(params.AMOUNT, params.TOKEN_PRICE);
+        require(params.HARDCAP > 0, 'hardcap cannot be zero, please check the token price');
         // Check that the hardcap is greater than or equal to softcap
-        require(hardcap >= params.SOFTCAP, 'softcap is greater than hardcap');
+        require(params.HARDCAP >= params.SOFTCAP, 'softcap is greater than hardcap');
 
         /// @dev Adjust liquidity percentage settings here
         require(
@@ -207,7 +207,7 @@ contract IAZOFactory is OwnableUpgradeable {
         // Setup initialization variables
         address[2] memory _addresses = [address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER)];
         address payable[2] memory _addressesPayable = [_IAZOOwner, IAZO_SETTINGS.getFeeAddress()];
-        uint256[12] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, hardcap, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_TIME, params.ACTIVE_TIME, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee(), IAZOTokenFee];
+        uint256[12] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, params.HARDCAP, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_TIME, params.ACTIVE_TIME, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee(), IAZOTokenFee];
         bool[1] memory _bools = [_burnRemains];
         ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
         // Deploy clone contract and set implementation to current IAZO version. "We recommend explicitly describing the risks of participating in malicious sales as Factory is meant to be used without constant admin intervention."
