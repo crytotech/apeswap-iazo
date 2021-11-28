@@ -101,14 +101,14 @@ describe("IAZO - Negative Tests", async function() {
                 "2000000000000000000000000", // max spend per buyer
                 iazoDetails.liquidityPercent, // liquidity percent
                 iazoDetails.softCap // listing price
-            ], { from: alice, value: 1000000000000000000 })
+            ], { from: alice, value: 10000000000000000000 })
 
         //Fee check2
         const newBalance = await balance.current(FeeAddress, unit = 'wei')
 
         assert.equal(
             newBalance - startBalance,
-            1000000000000000000,
+            10000000000000000000,
         );
 
         //new contract exposed check2

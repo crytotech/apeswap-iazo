@@ -105,7 +105,7 @@ describe('IAZO', function () {
                 IAZOConfig.maxSpendPerBuyer,
                 IAZOConfig.liquidityPercent,
                 IAZOConfig.listingPrice,
-            ], { from: carol, value: ether('1') })
+            ], { from: carol, value: ether('10') })
         currentIazo = await IAZO.at(await exposer.IAZOAtIndex(0));
 
 
@@ -113,7 +113,7 @@ describe('IAZO', function () {
         const newBalance = await balance.current(FeeAddress, unit = 'wei')
         assert.equal(
             newBalance - startBalance,
-            '1000000000000000000',
+            '10000000000000000000',
         );
 
         //new contract exposed check2

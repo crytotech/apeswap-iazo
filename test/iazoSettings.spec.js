@@ -57,7 +57,7 @@ describe('IAZOSettingsTest', function () {
         let nativeCreationFee = await settings.getNativeCreationFee({ from: admin });
         assert.equal(
             nativeCreationFee,
-            "1000000000000000000",
+            "10000000000000000000",
         );
 
         await settings.setFees(60, 50, "2000000000000000000", { from: admin });
@@ -117,7 +117,7 @@ describe('IAZOSettingsTest', function () {
         
         const tracker = await balance.tracker(bob);
 
-        const txReceipt = await settings.setFeeAddress(carol, { from: bob, value: ether('1') });
+        const txReceipt = await settings.setFeeAddress(carol, { from: bob, value: ether('10') });
         _feeAddress = await settings.getFeeAddress({ from: bob });
         assert.equal(
             _feeAddress,

@@ -64,7 +64,7 @@ async function createIAZO() {
             500,            // LIQUIDITY_PERCENT
             0,              // LISTING_PRICE (if 0 same as TOKEN_PRICE)
         ],
-        { value: ether('1') }
+        { value: ether('10') }
     );
 
     console.dir(receipt);
