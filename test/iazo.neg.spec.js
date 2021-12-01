@@ -85,7 +85,7 @@ describe("IAZO - Negative Tests", async function() {
 
         await banana.mint(tokensRequired, { from: alice });
         await banana.approve(factory.address, tokensRequired, { from: alice });
-        startTimestamp = (await time.latest()) + 10;
+        startTimestamp = (await settings.getMinStartTime()).toNumber() + 10;
         await factory.createIAZO(
             alice, 
             banana.address, 
@@ -132,11 +132,11 @@ describe("IAZO - Negative Tests", async function() {
     });
 
     it("iazo status should be in progress when start time is reached", async () => {
-        time.increaseTo(startTimestamp);
+        await time.increaseTo(startTimestamp);
 
         iazoStatus = await iazo.getIAZOState();
         assert.equal(
-            iazoStatus,
+            iazoStatus.toNumber(),
             1,
             "iazo should now be active"
         );

@@ -43,7 +43,7 @@ describe('IAZO native', function () {
         settings = await IAZOSettings.new(adminAddress, feeAddress);
         dexFactory = await ApeFactory.new(feeToSetter);
 
-        this.iazoStartTime = (await time.latest()) + 10;
+        this.iazoStartTime = (await settings.getMinStartTime()).toNumber() + 10;
         this.tokenTimelockImplementation = await IAZOTokenTimelock.new();
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
@@ -141,9 +141,14 @@ describe('IAZO native', function () {
     it("Should receive the iazo token", async () => {
         const balance = await iazoToken.balanceOf(currentIazo.address);
 
+        /**
+         * - 21e18 for sale
+         * - 3.15e18 for liquidity (30% of raise at twice the sale price)
+         * - 1.05e18 for 5% token fee
+         */
         assert.equal(
             balance.valueOf().toString(),
-            new BN('21000000000000000000').add(new BN('3150000000000000000').add(new BN('1050000000000000000'))), //hardcoded for now because might change the getTokensRequired() function
+            ether('21').add(ether('3.15')).add(ether('1.05')),
             "check for received iazo token"
         );
     });
@@ -157,7 +162,7 @@ describe('IAZO native', function () {
         );
     });
 
-    it("iazo harcap check", async () => {
+    it("iazo hardcap check", async () => {
         status = await currentIazo.IAZO_INFO.call();
 
         assert.equal(
@@ -168,12 +173,12 @@ describe('IAZO native', function () {
     });
 
     it("iazo status should be in progress when start time is reached", async () => {
-        time.increaseTo(this.iazoStartTime);
+        await time.increaseTo(this.iazoStartTime);
 
 
         iazoStatus = await currentIazo.getIAZOState();
         assert.equal(
-            iazoStatus,
+            iazoStatus.toNumber(),
             1,
             "iazo should now be active"
         );
@@ -237,7 +242,7 @@ describe('IAZO native', function () {
         assert.equal(
             iazoStatus,
             3,
-            "iazo should now be successfull with hardcap reached"
+            "iazo should now be successful with hardcap reached"
         );
     });
 
