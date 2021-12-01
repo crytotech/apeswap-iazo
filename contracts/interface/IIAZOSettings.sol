@@ -10,13 +10,26 @@ interface IIAZOSettings {
         view
         returns (
             address ADMIN_ADDRESS,
-            address FEE_ADDRESS,
-            uint256 BASE_FEE,
-            uint256 MAX_BASE_FEE,
-            uint256 NATIVE_CREATION_FEE,
-            uint256 MIN_IAZO_LENGTH,
-            uint256 MAX_IAZO_LENGTH,
-            uint256 MIN_LOCK_PERIOD
+            address payable FEE_ADDRESS,
+            address BURN_ADDRESS,
+            uint256 BASE_FEE, // base fee percentage
+            uint256 MAX_BASE_FEE, // max base fee percentage
+            uint256 IAZO_TOKEN_FEE, // base fee percentage
+            uint256 MAX_IAZO_TOKEN_FEE, // max base fee percentage
+            uint256 NATIVE_CREATION_FEE, // fee to generate a IAZO contract on the platform
+            uint256 MIN_LIQUIDITY_PERCENT,
+            uint256 MAX_LIQUIDITY_PERCENT
+        );
+    
+    function DELAY_SETTINGS()
+        external
+        view
+        returns (
+            uint256 MIN_IAZO_LENGTH, // minimum iazo active seconds
+            uint256 MAX_IAZO_LENGTH, // maximum iazo active seconds
+            uint256 MIN_LOCK_PERIOD,
+            uint256 START_DELAY, // minium time away from creation that the iazo can start
+            uint256 MAX_START_DELAY // minium time away from creation that the iazo can start
         );
 
     function isIAZOSettings() external view returns (bool);
@@ -45,6 +58,8 @@ interface IIAZOSettings {
 
     function getMinLiquidityPercent() external view returns (uint256);
 
+    function getMaxLiquidityPercent() external view returns (uint256);
+
     function getFeeAddress() external view returns (address payable);
 
     function getBurnAddress() external view returns (address);
@@ -64,6 +79,8 @@ interface IIAZOSettings {
     function setMinLockPeriod(uint256 _minLockPeriod) external;
 
     function setMinLiquidityPercent(uint256 _minLiquidityPercent) external;
+
+    function setMaxLiquidityPercent(uint256 _maxLiquidityPercent) external;
 
     function setBurnAddress(address _burnAddress) external;
 

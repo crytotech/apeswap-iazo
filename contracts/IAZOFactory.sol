@@ -175,7 +175,7 @@ contract IAZOFactory is OwnableUpgradeable {
         );
         require(
             params.ACTIVE_TIME <= IAZO_SETTINGS.getMaxIAZOLength(), 
-            "Exceeds max iazo length"
+            "exceeds max iazo length"
         );
 
         /// @dev This is a check to ensure the amount is greater than zero, but also there are enough tokens
@@ -189,8 +189,9 @@ contract IAZOFactory is OwnableUpgradeable {
 
         /// @dev Adjust liquidity percentage settings here
         require(
-            params.LIQUIDITY_PERCENT >= IAZO_SETTINGS.getMinLiquidityPercent() && params.LIQUIDITY_PERCENT <= 1000,
-            "Liquidity percentage too low"
+            params.LIQUIDITY_PERCENT >= IAZO_SETTINGS.getMinLiquidityPercent() && 
+            params.LIQUIDITY_PERCENT <= IAZO_SETTINGS.getMaxLiquidityPercent(),
+            "liquidity percentage out of range"
         );
 
         uint256 IAZOTokenFee = IAZO_SETTINGS.getIAZOTokenFee();
