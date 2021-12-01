@@ -21,16 +21,28 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 require('dotenv').config();
 
-/**
-* Pass in an array of RPC urls to grab a random one on each run
+/**`
+* Pass in an array of RPC urls to grab a random one on each run.
+* This function uses a closure so that the same rpc url is used on each run as 
+* HDWallet provider calls it multiple times
 * 
 * @param {*} rpcUrlArray 
 * @returns rpcUrl
 */
-function getRandomRPC(rpcUrlArray) {
-  // Using `| 0` here in place of Math.floor()
-  return rpcUrlArray[(Math.random() * rpcUrlArray.length) | 0]
+function randomRpcHandler() {
+  let rpc = undefined;
+  return function (rpcUrlArray) {
+    if (!rpc) {
+      // Using `| 0` here in place of Math.floor()
+      rpc = rpcUrlArray[(Math.random() * rpcUrlArray.length) | 0];
+      console.log(`truffle-config::Using rpc ${rpc}`)
+    }
+    return rpc;
+  }
 }
+
+const BSC_RPC = randomRpcHandler();
+const BSC_TESTNET_RPC = randomRpcHandler();
 
 const MAINNET_DEPLOYER_KEY = process.env.MAINNET_DEPLOYER_KEY;
 const TESTNET_DEPLOYER_KEY = process.env.TESTNET_DEPLOYER_KEY;
@@ -60,31 +72,37 @@ module.exports = {
       gas: 6721975
     },
     bsc: {
-      provider: () => new HDWalletProvider(
-        MAINNET_DEPLOYER_KEY,
-        getRandomRPC([
-          `https://bsc-dataseed.binance.org`,
-          `https://bsc-dataseed1.defibit.io`,
-          `https://bsc-dataseed1.ninicoin.io`,
-        ])
-      ),
+      provider: () => new HDWalletProvider(MAINNET_DEPLOYER_KEY, BSC_RPC([
+        `https://bsc-dataseed.binance.org/`,
+        `https://bsc-dataseed.binance.org/`,
+        `https://bsc-dataseed2.defibit.io/`,
+        `https://bsc-dataseed1.defibit.io/`,
+        `https://bsc-dataseed1.ninicoin.io/`,
+        `https://bsc-dataseed2.defibit.io/`,
+        `https://bsc-dataseed3.defibit.io/`,
+        `https://bsc-dataseed4.defibit.io/`,
+        `https://bsc-dataseed2.ninicoin.io/`,
+        `https://bsc-dataseed3.ninicoin.io/`,
+        `https://bsc-dataseed4.ninicoin.io/`,
+        `https://bsc-dataseed1.binance.org/`,
+        `https://bsc-dataseed2.binance.org/`,
+        `https://bsc-dataseed3.binance.org/`,
+        `https://bsc-dataseed4.binance.org/`,
+      ])),
       network_id: 56,
       confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: false
     },
     "bsc-testnet": {
-      provider: () => new HDWalletProvider(
-        TESTNET_DEPLOYER_KEY, 
-        getRandomRPC([
-          // `https://data-seed-prebsc-1-s1.binance.org:8545`,
-          // `https://data-seed-prebsc-2-s1.binance.org:8545`,
-          // `https://data-seed-prebsc-1-s2.binance.org:8545`,
-          // `https://data-seed-prebsc-2-s2.binance.org:8545`,
-          `https://data-seed-prebsc-1-s3.binance.org:8545`,
-          // `https://data-seed-prebsc-2-s3.binance.org:8545`,
-        ])
-      ),
+      provider: () => new HDWalletProvider(TESTNET_DEPLOYER_KEY, BSC_TESTNET_RPC([
+        `https://data-seed-prebsc-1-s1.binance.org:8545`,
+        `https://data-seed-prebsc-2-s1.binance.org:8545`,
+        `https://data-seed-prebsc-1-s2.binance.org:8545`,
+        `https://data-seed-prebsc-2-s2.binance.org:8545`,
+        `https://data-seed-prebsc-1-s3.binance.org:8545`,
+        `https://data-seed-prebsc-2-s3.binance.org:8545`,
+      ])),
       network_id: 97,
       confirmations: 2,
       timeoutBlocks: 200,
