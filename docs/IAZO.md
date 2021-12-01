@@ -77,7 +77,7 @@ Change the max spend limit for a buyer
 
 
 
-### `addLiquidity()` (public)
+### `addLiquidity() → bool` (public)
 
 Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
 

@@ -263,15 +263,22 @@ contract IAZO is Initializable, ReentrancyGuard {
            userWithdrawFailedPrivate();
        }
         // Success / hardcap met
-       if(currentIAZOState == 2 || currentIAZOState == 3) { 
-           userWithdrawSuccessPrivate();
+       if(currentIAZOState == 2 || currentIAZOState == 3) {
+            if(!STATUS.LP_GENERATION_COMPLETE) {
+                if(addLiquidity()) {
+                    // If LP generation was successful
+                    userWithdrawSuccessPrivate();
+                } else {
+                    // If LP generation was unsuccessful
+                    userWithdrawFailedPrivate();
+                }
+            } else {
+                userWithdrawSuccessPrivate();
+            }
        }
     }
 
     function userWithdrawSuccessPrivate() private {
-        if(!STATUS.LP_GENERATION_COMPLETE){
-            addLiquidity();
-        }
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
         STATUS.TOTAL_TOKENS_WITHDRAWN += buyer.tokensBought;
@@ -341,7 +348,7 @@ contract IAZO is Initializable, ReentrancyGuard {
     }
 
     /// @notice Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
-    function addLiquidity() public nonReentrant { 
+    function addLiquidity() public nonReentrant returns (bool) { 
         require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');
         uint256 currentIAZOState = getIAZOState();
         // Check if IAZO SUCCESS or HARDCAP met
@@ -353,7 +360,8 @@ contract IAZO is Initializable, ReentrancyGuard {
         // If pair for this token has already been initialized, then this will fail the IAZO
         if (IAZO_LIQUIDITY_LOCKER.apePairIsInitialized(address(iazoToken), address(baseToken))) {
             STATUS.FORCE_FAILED = true;
-            return;
+            emit ForceFailed(address(0));
+            return false;
         }
 
         //calculate fees
@@ -420,7 +428,7 @@ contract IAZO is Initializable, ReentrancyGuard {
         }
         
         emit AddLiquidity(baseLiquidity, saleTokenLiquidity, remainingBaseBalance);
-
+        return true;
     }
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 
