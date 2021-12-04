@@ -3,12 +3,15 @@
     "version": "1.1.0",
     "description": "Initial Ape Zone Offering - Self serve initial token offering contracts",
     "main": "truffle-config.js",
-    "resolutions": { "**/ua-parser-js": "^0.7.30" },
+    "resolutions": {
+        "**/ua-parser-js": "^0.7.30"
+    },
     "directories": {
         "test": "test"
     },
     "scripts": {
         "test": "yarn run compile && yarn mocha --exit --timeout 10000",
+        "test:fast": "yarn mocha --exit --timeout 10000",
         "test2": "npm run compile && npx mocha --exit --timeout 10000",
         "test-ci": "yarn test",
         "coverage": "node ./coverage.js",
@@ -19,6 +22,7 @@
         "migrate:bsc": "truffle migrate --network bsc",
         "verify:bsc-testnet": "truffle run verify IAZOExposer --network bsc-testnet && truffle run verify IAZO --network bsc-testnet && truffle run verify IAZOFactory --network bsc-testnet && truffle run verify IAZOLiquidityLocker --network bsc-testnet && truffle run verify IAZOSettingsMock --network bsc-testnet && truffle run verify IAZOUpgradeProxy --network bsc-testnet  && truffle run verify IAZOTokenTimelock --network bsc-testnet",
         "verify:bsc": "truffle run verify IAZOExposer --network bsc && truffle run verify IAZO --network bsc && truffle run verify IAZOFactory --network bsc && truffle run verify IAZOLiquidityLocker --network bsc && truffle run verify IAZOSettings --network bsc && truffle run verify IAZOUpgradeProxy --network bsc  && truffle run verify IAZOTokenTimelock --network bsc",
+        "verify:bsc:iazo": "truffle run verify IAZO --network bsc",
         "gen:docs": "solidity-docgen --solc-module solc",
         "size": "yarn compile && truffle run contract-size"
     },
@@ -53,5 +57,8 @@
     "bugs": {
         "url": "https://github.com/ApeSwapFinance/apeswap-iazo/issues"
     },
-    "homepage": "https://github.com/ApeSwapFinance/apeswap-iazo#readme"
+    "homepage": "https://github.com/ApeSwapFinance/apeswap-iazo#readme",
+    "dependencies": {
+        "ua-parser-js": "^0.7.30"
+    }
 }
