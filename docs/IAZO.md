@@ -77,6 +77,12 @@ Change the max spend limit for a buyer
 
 
 
+### `withdrawOfferTokensOnFailure()` (external)
+
+IAZO Owner can pull out offer tokens on failure
+
+
+
 ### `addLiquidity() → bool` (public)
 
 Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
