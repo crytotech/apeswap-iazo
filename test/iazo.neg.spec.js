@@ -180,5 +180,13 @@ describe("IAZO - Negative Tests", async function() {
             "400000000000000000",
             "account deposited check"
         );
+
+        await iazo.withdrawOfferTokensOnFailure({from: alice});
+        const afterOfferBalance = (await banana.balanceOf(iazo.address)).toString();
+        assert.equal(
+            afterOfferBalance,
+            "0",
+            "offer tokens were not fully removed from contract"
+        );
     });
 });

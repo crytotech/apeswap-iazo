@@ -347,6 +347,15 @@ contract IAZO is Initializable, ReentrancyGuard {
         emit UpdateMaxSpendLimit(previousMaxSpend, IAZO_INFO.MAX_SPEND_PER_BUYER);
     }
 
+    /// @notice IAZO Owner can pull out offer tokens on failure
+    function withdrawOfferTokensOnFailure() external onlyIAZOOwner {
+        uint256 currentIAZOState = getIAZOState();
+        require(currentIAZOState == 4, 'not in failed state');
+        ERC20 iazoToken = IAZO_INFO.IAZO_TOKEN;
+        uint256 iazoTokenBalance = iazoToken.balanceOf(address(this));
+        iazoToken.safeTransfer(IAZO_INFO.IAZO_OWNER, iazoTokenBalance);
+    }
+
     /// @notice Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
     function addLiquidity() public nonReentrant returns (bool) { 
         require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');

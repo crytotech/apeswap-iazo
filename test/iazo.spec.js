@@ -187,6 +187,15 @@ describe('IAZO', function () {
         await baseToken.approve(currentIazo.address, "400000000000000000", { from: alice });
         await currentIazo.userDeposit("400000000000000000", { from: alice });
 
+        await expectRevert(
+            currentIazo.withdrawOfferTokensOnFailure({from: alice}),
+            "IAZO owner only"
+        );
+        await expectRevert(
+            currentIazo.withdrawOfferTokensOnFailure({from: carol}),
+            "not in failed state"
+        );
+
         const buyerInfo = await currentIazo.BUYERS.call(alice);
         assert.equal(
             buyerInfo.deposited,
