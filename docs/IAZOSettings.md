@@ -89,7 +89,7 @@ Settings for new IAZOs
 
 
 
-### `getMaxLiquidityPercent() → uint256` (external)
+### `getMaxLiquidityPercent() → uint256` (public)
 
 
 
@@ -155,13 +155,6 @@ Because liquidity percent and the base fee are taken from the base percentage,
 
 
 
-
-### `setMaxLiquidityPercent(uint256 _maxLiquidityPercent)` (external)
-
-
-
-Because liquidity percent and the base fee are taken from the base percentage,
- their combined value cannot be over 100%
 
 
 ### `AdminTransferred(address previousAdmin, address newAdmin)`
@@ -247,9 +240,6 @@ uint256 NATIVE_CREATION_FEE
 
 
 uint256 MIN_LIQUIDITY_PERCENT
-
-
-uint256 MAX_LIQUIDITY_PERCENT
 
 
 ### `DelaySettings`

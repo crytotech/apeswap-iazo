@@ -29,7 +29,6 @@ contract IAZOSettings {
         uint256 MAX_IAZO_TOKEN_FEE; // max base fee percentage
         uint256 NATIVE_CREATION_FEE; // fee to generate a IAZO contract on the platform
         uint256 MIN_LIQUIDITY_PERCENT;
-        uint256 MAX_LIQUIDITY_PERCENT;
     }
 
     struct DelaySettings {
@@ -71,7 +70,6 @@ contract IAZOSettings {
         DELAY_SETTINGS.MAX_IAZO_LENGTH = 1814000;         // 3 weeks (in seconds) 
         DELAY_SETTINGS.MIN_LOCK_PERIOD = 2419000;         // 28 days (in seconds)
         SETTINGS.MIN_LIQUIDITY_PERCENT = 300;       // .30 (30%) of raise matched with IAZO tokens
-        SETTINGS.MAX_LIQUIDITY_PERCENT = 1000 - SETTINGS.BASE_FEE; // Can add everything after the base fee
         SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     }
 
@@ -131,8 +129,8 @@ contract IAZOSettings {
         return SETTINGS.MIN_LIQUIDITY_PERCENT;
     }
 
-    function getMaxLiquidityPercent() external view returns (uint256) {
-        return SETTINGS.MAX_LIQUIDITY_PERCENT;
+    function getMaxLiquidityPercent() public view returns (uint256) {
+        return 1000 - SETTINGS.BASE_FEE;
     }
     
     function getFeeAddress() external view returns (address payable) {
@@ -163,7 +161,6 @@ contract IAZOSettings {
     ///  their combined value cannot be over 100%
     function setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee) external onlyAdmin {
         require(_baseFee <= SETTINGS.MAX_BASE_FEE, "base fee over max allowable");
-        require(_baseFee <= 1000 - SETTINGS.MAX_LIQUIDITY_PERCENT, "base fee plus liquidity percent over 1000");
         require(_iazoTokenFee <= SETTINGS.MAX_IAZO_TOKEN_FEE, "IAZO token fee over max allowable");
         emit UpdateFees(SETTINGS.BASE_FEE, _baseFee, SETTINGS.IAZO_TOKEN_FEE, _iazoTokenFee, SETTINGS.NATIVE_CREATION_FEE, _nativeCreationFee);
         
@@ -196,16 +193,8 @@ contract IAZOSettings {
     }
 
     function setMinLiquidityPercent(uint256 _minLiquidityPercent) external onlyAdmin {
-        require(_minLiquidityPercent <= SETTINGS.MAX_LIQUIDITY_PERCENT, "over max liquidity percent");
+        require(_minLiquidityPercent <= getMaxLiquidityPercent(), "over max liquidity percent");
         emit UpdateMinLiquidityPercent(SETTINGS.MIN_LIQUIDITY_PERCENT, _minLiquidityPercent);
         SETTINGS.MIN_LIQUIDITY_PERCENT = _minLiquidityPercent;
-    }      
-
-    /// @dev Because liquidity percent and the base fee are taken from the base percentage,
-    ///  their combined value cannot be over 100%
-    function setMaxLiquidityPercent(uint256 _maxLiquidityPercent) external onlyAdmin {
-        require(_maxLiquidityPercent <= 1000 - SETTINGS.BASE_FEE, "liquidity percent plus base fee over 1000");
-        emit UpdateMaxLiquidityPercent(SETTINGS.MAX_LIQUIDITY_PERCENT, _maxLiquidityPercent);
-        SETTINGS.MAX_LIQUIDITY_PERCENT = _maxLiquidityPercent;
-    }      
+    }          
 }
