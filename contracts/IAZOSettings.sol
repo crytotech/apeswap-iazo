@@ -57,14 +57,14 @@ contract IAZOSettings {
     constructor(address admin, address feeAddress) {
         // Percentages are multiplied by 1000
         SETTINGS.ADMIN_ADDRESS = admin;     
-        SETTINGS.BASE_FEE = 50;                     // .05 (5%) - initial base fee %
+        SETTINGS.BASE_FEE = 15;                     // .015 (1.5%) - initial base fee %
         SETTINGS.MAX_BASE_FEE = 300;                // .30 (30%) - max base fee %
-        SETTINGS.IAZO_TOKEN_FEE = 50;               // .05 (5%) - initial iazo fee %
+        SETTINGS.IAZO_TOKEN_FEE = 15;               // .015 (1.5%) - initial iazo fee %
         SETTINGS.MAX_IAZO_TOKEN_FEE = 300;          // .30 (30%) - max iazo fee %
         SETTINGS.NATIVE_CREATION_FEE = 10 * 1e18;        // 10 native token(s)
         /// @dev Fee address must be able to receive native currency
         SETTINGS.FEE_ADDRESS = payable(feeAddress); // Address that receives fees from IAZOs
-        DELAY_SETTINGS.START_DELAY = 624000;               // 10 days (in seconds)
+        DELAY_SETTINGS.START_DELAY = 864000;               // 10 days (in seconds)
         DELAY_SETTINGS.MAX_START_DELAY = 2419000;         // 28 days (in seconds)
         DELAY_SETTINGS.MIN_IAZO_LENGTH = 43200;           // 12 hrs (in seconds)
         DELAY_SETTINGS.MAX_IAZO_LENGTH = 1814000;         // 3 weeks (in seconds) 
