@@ -60,6 +60,7 @@ describe('IAZOSettingsTest', function () {
             "10000000000000000000",
         );
 
+        await settings.setMaxLiquidityPercent(940, { from: admin });
         await settings.setFees(60, 50, "2000000000000000000", { from: admin });
         baseFee = await settings.getBaseFee({ from: admin });
         assert.equal(

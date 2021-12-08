@@ -126,7 +126,16 @@ contract IAZOFactory is OwnableUpgradeable {
     /// @param _IAZOToken The address of the token to be sold
     /// @param _baseToken The address of the base token to be received
     /// @param _burnRemains Option to burn the remaining unsold tokens
-    /// @param _uint_params IAZO settings. token price, amount of tokens for sale, softcap, start time, active time, liquidity locking period, maximum spend per buyer, percentage to lock as liquidity, listing price
+    /// @param _uint_params IAZO settings. 
+    /// _uint_params[0] token price
+    /// _uint_params[1] amount of tokens for sale
+    /// _uint_params[2] softcap
+    /// _uint_params[3] start time
+    /// _uint_params[4] active time
+    /// _uint_params[5] liquidity locking period
+    /// _uint_params[6] maximum spend per buyer
+    /// _uint_params[7] percentage to lock as liquidity
+    /// _uint_params[8] listing price
     function createIAZO(
         address payable _IAZOOwner,
         ERC20 _IAZOToken,
