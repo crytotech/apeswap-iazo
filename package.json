@@ -1,6 +1,6 @@
 {
     "name": "iazo",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Initial Ape Zone Offering - Self serve initial token offering contracts",
     "main": "truffle-config.js",
     "resolutions": {
