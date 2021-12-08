@@ -71,6 +71,7 @@ contract IAZOSettingsMock {
         DELAY_SETTINGS.MAX_IAZO_LENGTH = 1814000; // 3 weeks (in seconds)
         DELAY_SETTINGS.MIN_LOCK_PERIOD = 60; //  1 min // NOTE: For testing purposes
         SETTINGS.MIN_LIQUIDITY_PERCENT = 300; // .30 (30%) of raise matched with IAZO tokens
+        SETTINGS.MAX_LIQUIDITY_PERCENT = 1000 - SETTINGS.BASE_FEE; // Can add everything after the base fee
         SETTINGS.BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     }
 
