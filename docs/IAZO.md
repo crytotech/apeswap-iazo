@@ -77,7 +77,13 @@ Change the max spend limit for a buyer
 
 
 
-### `addLiquidity()` (public)
+### `withdrawOfferTokensOnFailure()` (external)
+
+IAZO Owner can pull out offer tokens on failure
+
+
+
+### `addLiquidity() → bool` (public)
 
 Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
 
@@ -142,6 +148,104 @@ A public function to sweep accidental ERC20 transfers to this contract.
 ### `UserDeposited(address _address, uint256 _amount)`
 
 
+
+
+
+
+### `IAZOInfo`
+
+
+address payable IAZO_OWNER
+
+
+contract ERC20 IAZO_TOKEN
+
+
+contract ERC20 BASE_TOKEN
+
+
+bool IAZO_SALE_IN_NATIVE
+
+
+uint256 TOKEN_PRICE
+
+
+uint256 AMOUNT
+
+
+uint256 HARDCAP
+
+
+uint256 SOFTCAP
+
+
+uint256 MAX_SPEND_PER_BUYER
+
+
+uint256 LIQUIDITY_PERCENT
+
+
+uint256 LISTING_PRICE
+
+
+bool BURN_REMAINS
+
+
+### `IAZOTimeInfo`
+
+
+uint256 START_TIME
+
+
+uint256 ACTIVE_TIME
+
+
+uint256 LOCK_PERIOD
+
+
+### `IAZOStatus`
+
+
+bool LP_GENERATION_COMPLETE
+
+
+bool FORCE_FAILED
+
+
+uint256 TOTAL_BASE_COLLECTED
+
+
+uint256 TOTAL_TOKENS_SOLD
+
+
+uint256 TOTAL_TOKENS_WITHDRAWN
+
+
+uint256 TOTAL_BASE_WITHDRAWN
+
+
+uint256 NUM_BUYERS
+
+
+### `BuyerInfo`
+
+
+uint256 deposited
+
+
+uint256 tokensBought
+
+
+### `FeeInfo`
+
+
+address payable FEE_ADDRESS
+
+
+uint256 BASE_FEE
+
+
+uint256 IAZO_TOKEN_FEE
 
 
 

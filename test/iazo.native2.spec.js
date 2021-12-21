@@ -20,7 +20,7 @@ const IAZOLiquidityLocker = contract.fromArtifact("IAZOLiquidityLocker");
 const IAZOTokenTimelock = contract.fromArtifact("IAZOTokenTimelock");
 
 
-describe('IAZO native', function () {
+describe('IAZO native full liquidity percent', function () {
     const [minter, proxyAdmin, adminAddress, feeToSetter, feeAddress, alice, bob, carol, dan] = accounts;
     const { wNative } = getNetworkConfig('development', accounts)
 
@@ -87,7 +87,7 @@ describe('IAZO native', function () {
             activeTime: 43201, // active time
             lockPeriod: 2419000, // lock period
             maxSpendPerBuyer: ether("2000000"), // max spend per buyer
-            liquidityPercent: "300", // liquidity percent
+            liquidityPercent: "950", // liquidity percent
             listingPrice: ether(".2") // listing price
         }
 
@@ -143,12 +143,12 @@ describe('IAZO native', function () {
 
         /**
          * - 21e18 for sale
-         * - 3.15e18 for liquidity (30% of raise at twice the sale price)
+         * - 9.975e18 for liquidity (95% of raise at twice the sale price)
          * - 1.05e18 for 5% token fee
          */
         assert.equal(
             balance.valueOf().toString(),
-            ether('21').add(ether('3.15')).add(ether('1.05')),
+            ether('21').add(ether("9.975")).add(ether("1.05")).toString(), //hardcoded for now because might change the getTokensRequired() function
             "check for received iazo token"
         );
     });
@@ -313,8 +313,8 @@ describe('IAZO native', function () {
 
         assert.equal(
             newWnativeBalance - baseTokenBalance,
-            //2.1 - 5% fee - 30% liquidity
-            new BN("1365000000000000000"),
+            //5% fee + 95% liquidity = 0% to owner
+            new BN("0"),
             "wrong balance"
         );
     });

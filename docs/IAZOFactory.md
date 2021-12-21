@@ -87,3 +87,38 @@ A public function to sweep accidental ERC20 transfers to this contract.
 
 
 
+
+### `IAZOParams`
+
+
+uint256 TOKEN_PRICE
+
+
+uint256 AMOUNT
+
+
+uint256 HARDCAP
+
+
+uint256 SOFTCAP
+
+
+uint256 START_TIME
+
+
+uint256 ACTIVE_TIME
+
+
+uint256 LOCK_PERIOD
+
+
+uint256 MAX_SPEND_PER_BUYER
+
+
+uint256 LIQUIDITY_PERCENT
+
+
+uint256 LISTING_PRICE
+
+
+

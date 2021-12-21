@@ -42,7 +42,7 @@ describe('IAZO', function () {
         settings = await IAZOSettings.new(adminAddress, feeAddress);
         dexFactory = await ApeFactory.new(feeToSetter);
 
-        this.iazoStartTime = (await time.latest()) + 10;
+        this.iazoStartTime = (await settings.getMinStartTime()).toNumber() + 10;
         this.tokenTimelockImplementation = await IAZOTokenTimelock.new();
 
         const liquidityLockerContract = await IAZOLiquidityLocker.new();
@@ -105,7 +105,7 @@ describe('IAZO', function () {
                 IAZOConfig.maxSpendPerBuyer,
                 IAZOConfig.liquidityPercent,
                 IAZOConfig.listingPrice,
-            ], { from: carol, value: ether('1') })
+            ], { from: carol, value: ether('10') })
         currentIazo = await IAZO.at(await exposer.IAZOAtIndex(0));
 
 
@@ -113,7 +113,7 @@ describe('IAZO', function () {
         const newBalance = await balance.current(FeeAddress, unit = 'wei')
         assert.equal(
             newBalance - startBalance,
-            '1000000000000000000',
+            '10000000000000000000',
         );
 
         //new contract exposed check2
@@ -156,7 +156,7 @@ describe('IAZO', function () {
         );
     });
 
-    it("iazo harcap check", async () => {
+    it("iazo hardcap check", async () => {
         status = await currentIazo.IAZO_INFO.call();
 
         assert.equal(
@@ -167,7 +167,7 @@ describe('IAZO', function () {
     });
 
     it("iazo status should be in progress when start time is reached", async () => {
-        time.increaseTo(this.iazoStartTime);
+        await time.increaseTo(await this.iazoStartTime);
 
 
         iazoStatus = await currentIazo.getIAZOState();
@@ -186,6 +186,15 @@ describe('IAZO', function () {
         await baseToken.mint("400000000000000000", { from: alice });
         await baseToken.approve(currentIazo.address, "400000000000000000", { from: alice });
         await currentIazo.userDeposit("400000000000000000", { from: alice });
+
+        await expectRevert(
+            currentIazo.withdrawOfferTokensOnFailure({from: alice}),
+            "IAZO owner only"
+        );
+        await expectRevert(
+            currentIazo.withdrawOfferTokensOnFailure({from: carol}),
+            "not in failed state"
+        );
 
         const buyerInfo = await currentIazo.BUYERS.call(alice);
         assert.equal(
@@ -242,7 +251,7 @@ describe('IAZO', function () {
         assert.equal(
             iazoStatus,
             3,
-            "iazo should now be successfull with hardcap reached"
+            "iazo should now be successful with hardcap reached"
         );
     });
 

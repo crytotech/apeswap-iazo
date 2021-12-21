@@ -122,7 +122,7 @@ module.exports = async function (deployer, network, accounts) {
     [
       IAZOExposer.address,
       iazoSettings.address,
-      IAZOLiquidityLocker.address,
+      liquidityLockerAddress,
       IAZO.address,
       wNative,
       adminAddress

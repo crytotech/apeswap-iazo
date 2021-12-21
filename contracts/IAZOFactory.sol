@@ -126,7 +126,16 @@ contract IAZOFactory is OwnableUpgradeable {
     /// @param _IAZOToken The address of the token to be sold
     /// @param _baseToken The address of the base token to be received
     /// @param _burnRemains Option to burn the remaining unsold tokens
-    /// @param _uint_params IAZO settings. token price, amount of tokens for sale, softcap, start time, active time, liquidity locking period, maximum spend per buyer, percentage to lock as liquidity, listing price
+    /// @param _uint_params IAZO settings. 
+    /// _uint_params[0] token price
+    /// _uint_params[1] amount of tokens for sale
+    /// _uint_params[2] softcap
+    /// _uint_params[3] start time
+    /// _uint_params[4] active time
+    /// _uint_params[5] liquidity locking period
+    /// _uint_params[6] maximum spend per buyer
+    /// _uint_params[7] percentage to lock as liquidity
+    /// _uint_params[8] listing price
     function createIAZO(
         address payable _IAZOOwner,
         ERC20 _IAZOToken,
@@ -168,29 +177,30 @@ contract IAZOFactory is OwnableUpgradeable {
             address(this).balance
         );
 
-        require(params.START_TIME > block.timestamp, "iazo should start in future");
+        require(params.START_TIME >= IAZO_SETTINGS.getMinStartTime(), "start delay too short");
         require(
             params.ACTIVE_TIME >= IAZO_SETTINGS.getMinIAZOLength(), 
             "iazo length not long enough"
         );
         require(
             params.ACTIVE_TIME <= IAZO_SETTINGS.getMaxIAZOLength(), 
-            "Exceeds max iazo length"
+            "exceeds max iazo length"
         );
 
         /// @dev This is a check to ensure the amount is greater than zero, but also there are enough tokens
         ///   to handle percent and liquidity calculations.
         require(params.AMOUNT >= 10000, "amount is less than minimum divisibility");
         // Find the hard cap of the offering in base tokens
-        uint256 hardcap = getHardCap(params.AMOUNT, params.TOKEN_PRICE);
-        require(hardcap > 0, 'hardcap cannot be zero, please check the token price');
+        params.HARDCAP = getHardCap(params.AMOUNT, params.TOKEN_PRICE);
+        require(params.HARDCAP > 0, 'hardcap cannot be zero, please check the token price');
         // Check that the hardcap is greater than or equal to softcap
-        require(hardcap >= params.SOFTCAP, 'softcap is greater than hardcap');
+        require(params.HARDCAP >= params.SOFTCAP, 'softcap is greater than hardcap');
 
         /// @dev Adjust liquidity percentage settings here
         require(
-            params.LIQUIDITY_PERCENT >= IAZO_SETTINGS.getMinLiquidityPercent() && params.LIQUIDITY_PERCENT <= 1000,
-            "Liquidity percentage too low"
+            params.LIQUIDITY_PERCENT >= IAZO_SETTINGS.getMinLiquidityPercent() && 
+            params.LIQUIDITY_PERCENT <= IAZO_SETTINGS.getMaxLiquidityPercent(),
+            "liquidity percentage out of range"
         );
 
         uint256 IAZOTokenFee = IAZO_SETTINGS.getIAZOTokenFee();
@@ -207,7 +217,7 @@ contract IAZOFactory is OwnableUpgradeable {
         // Setup initialization variables
         address[2] memory _addresses = [address(IAZO_SETTINGS), address(IAZO_LIQUIDITY_LOCKER)];
         address payable[2] memory _addressesPayable = [_IAZOOwner, IAZO_SETTINGS.getFeeAddress()];
-        uint256[12] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, hardcap, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_TIME, params.ACTIVE_TIME, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee(), IAZOTokenFee];
+        uint256[12] memory _uint256s = [params.TOKEN_PRICE, params.AMOUNT, params.HARDCAP, params.SOFTCAP, params.MAX_SPEND_PER_BUYER, params.LIQUIDITY_PERCENT, params.LISTING_PRICE, params.START_TIME, params.ACTIVE_TIME, params.LOCK_PERIOD, IAZO_SETTINGS.getBaseFee(), IAZOTokenFee];
         bool[1] memory _bools = [_burnRemains];
         ERC20[2] memory _ERC20s = [_IAZOToken, _baseToken];
         // Deploy clone contract and set implementation to current IAZO version. "We recommend explicitly describing the risks of participating in malicious sales as Factory is meant to be used without constant admin intervention."

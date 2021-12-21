@@ -29,6 +29,12 @@ Settings for new IAZOs
 
 
 
+### `getMinStartTime() → uint256` (external)
+
+
+
+
+
 ### `getMaxIAZOLength() → uint256` (external)
 
 
@@ -83,6 +89,12 @@ Settings for new IAZOs
 
 
 
+### `getMaxLiquidityPercent() → uint256` (public)
+
+
+
+
+
 ### `getFeeAddress() → address payable` (external)
 
 
@@ -108,6 +120,13 @@ Settings for new IAZOs
 
 
 ### `setFees(uint256 _baseFee, uint256 _iazoTokenFee, uint256 _nativeCreationFee)` (external)
+
+
+
+Because liquidity percent and the base fee are taken from the base percentage,
+ their combined value cannot be over 100%
+
+### `setStartDelay(uint256 _newStartDelay)` (external)
 
 
 
@@ -156,6 +175,12 @@ Settings for new IAZOs
 
 
 
+### `UpdateStartDelay(uint256 previousStartDelay, uint256 newStartDelay)`
+
+
+
+
+
 ### `UpdateMinIAZOLength(uint256 previousMinLength, uint256 newMinLength)`
 
 
@@ -177,6 +202,62 @@ Settings for new IAZOs
 ### `UpdateMinLiquidityPercent(uint256 previousMinLiquidityPercent, uint256 newMinLiquidityPercent)`
 
 
+
+
+
+### `UpdateMaxLiquidityPercent(uint256 previousMaxLiquidityPercent, uint256 newMaxLiquidityPercent)`
+
+
+
+
+
+
+### `Settings`
+
+
+address ADMIN_ADDRESS
+
+
+address payable FEE_ADDRESS
+
+
+address BURN_ADDRESS
+
+
+uint256 BASE_FEE
+
+
+uint256 MAX_BASE_FEE
+
+
+uint256 IAZO_TOKEN_FEE
+
+
+uint256 MAX_IAZO_TOKEN_FEE
+
+
+uint256 NATIVE_CREATION_FEE
+
+
+uint256 MIN_LIQUIDITY_PERCENT
+
+
+### `DelaySettings`
+
+
+uint256 MIN_IAZO_LENGTH
+
+
+uint256 MAX_IAZO_LENGTH
+
+
+uint256 MIN_LOCK_PERIOD
+
+
+uint256 START_DELAY
+
+
+uint256 MAX_START_DELAY
 
 
 

@@ -208,7 +208,7 @@ contract IAZO is Initializable, ReentrancyGuard {
 
     /// @notice Internal function used to buy IAZO tokens in either native coin or base token
     /// @param _amount Amount of base tokens to use to buy IAZO tokens for
-    function userDepositPrivate (uint256 _amount) private {
+    function userDepositPrivate (uint256 _amount) private nonReentrant {
         require(_amount > 0, 'deposit amount must be greater than zero');
         // Check that IAZO is in the ACTIVE state for user deposits
         require(getIAZOState() == 1, 'IAZO not active');
@@ -222,25 +222,30 @@ contract IAZO is Initializable, ReentrancyGuard {
             allowedAmount = allowance;
         }
 
-        uint256 tokensSold = (allowedAmount * 1e18) / IAZO_INFO.TOKEN_PRICE;
-        require(tokensSold > 0, '0 tokens bought');
-        if (buyer.deposited == 0) {
-            STATUS.NUM_BUYERS++;
-        }
-        buyer.deposited += allowedAmount;
-        buyer.tokensBought += tokensSold;
-        STATUS.TOTAL_BASE_COLLECTED += allowedAmount;
-        STATUS.TOTAL_TOKENS_SOLD += tokensSold;
-        
+        uint256 depositedAmount = allowedAmount;
         // return unused NATIVE tokens
         if (IAZO_INFO.IAZO_SALE_IN_NATIVE && allowedAmount < msg.value) {
             transferNativeCurrencyPrivate(payable(msg.sender), msg.value - allowedAmount);
         }
         // deduct non NATIVE token from user
         if (!IAZO_INFO.IAZO_SALE_IN_NATIVE) {
+            /// @dev Find actual transfer amount if reflect token
+            uint256 beforeBaseBalance = IAZO_INFO.BASE_TOKEN.balanceOf(address(this));
             IAZO_INFO.BASE_TOKEN.safeTransferFrom(msg.sender, address(this), allowedAmount);
+            depositedAmount = IAZO_INFO.BASE_TOKEN.balanceOf(address(this)) - beforeBaseBalance;
         }
-        emit UserDeposited(msg.sender, allowedAmount);
+
+        uint256 tokensSold = (depositedAmount * 1e18) / IAZO_INFO.TOKEN_PRICE;
+        require(tokensSold > 0, '0 tokens bought');
+        if (buyer.deposited == 0) {
+            STATUS.NUM_BUYERS++;
+        }
+        buyer.deposited += depositedAmount;
+        buyer.tokensBought += tokensSold;
+        STATUS.TOTAL_BASE_COLLECTED += depositedAmount;
+        STATUS.TOTAL_TOKENS_SOLD += tokensSold;
+        
+        emit UserDeposited(msg.sender, depositedAmount);
     }
 
     /// @notice The function users call to withdraw funds
@@ -258,15 +263,22 @@ contract IAZO is Initializable, ReentrancyGuard {
            userWithdrawFailedPrivate();
        }
         // Success / hardcap met
-       if(currentIAZOState == 2 || currentIAZOState == 3) { 
-           userWithdrawSuccessPrivate();
+       if(currentIAZOState == 2 || currentIAZOState == 3) {
+            if(!STATUS.LP_GENERATION_COMPLETE) {
+                if(addLiquidity()) {
+                    // If LP generation was successful
+                    userWithdrawSuccessPrivate();
+                } else {
+                    // If LP generation was unsuccessful
+                    userWithdrawFailedPrivate();
+                }
+            } else {
+                userWithdrawSuccessPrivate();
+            }
        }
     }
 
     function userWithdrawSuccessPrivate() private {
-        if(!STATUS.LP_GENERATION_COMPLETE){
-            addLiquidity();
-        }
         BuyerInfo storage buyer = BUYERS[msg.sender];
         require(buyer.tokensBought > 0, 'Nothing to withdraw');
         STATUS.TOTAL_TOKENS_WITHDRAWN += buyer.tokensBought;
@@ -316,7 +328,7 @@ contract IAZO is Initializable, ReentrancyGuard {
     /// @param _activeTime New active time of IAZO
     function updateStart(uint256 _startTime, uint256 _activeTime) external onlyIAZOOwner {
         require(IAZO_TIME_INFO.START_TIME > block.timestamp, "IAZO has already started");
-        require(_startTime > block.timestamp, "Start time must be in future");
+        require(_startTime >= IAZO_SETTINGS.getMinStartTime(), "Start time must be in future");
         require(_activeTime >= IAZO_SETTINGS.getMinIAZOLength(), "IAZO active time is too short");
         require(_activeTime <= IAZO_SETTINGS.getMaxIAZOLength(), "IAZO active time is too long");
         uint256 previousStartTime = IAZO_TIME_INFO.START_TIME;
@@ -335,8 +347,17 @@ contract IAZO is Initializable, ReentrancyGuard {
         emit UpdateMaxSpendLimit(previousMaxSpend, IAZO_INFO.MAX_SPEND_PER_BUYER);
     }
 
+    /// @notice IAZO Owner can pull out offer tokens on failure
+    function withdrawOfferTokensOnFailure() external onlyIAZOOwner {
+        uint256 currentIAZOState = getIAZOState();
+        require(currentIAZOState == 4, 'not in failed state');
+        ERC20 iazoToken = IAZO_INFO.IAZO_TOKEN;
+        uint256 iazoTokenBalance = iazoToken.balanceOf(address(this));
+        iazoToken.safeTransfer(IAZO_INFO.IAZO_OWNER, iazoTokenBalance);
+    }
+
     /// @notice Final step when IAZO is successful. lock liquidity and enable withdrawals of sale token.
-    function addLiquidity() public nonReentrant { 
+    function addLiquidity() public nonReentrant returns (bool) { 
         require(!STATUS.LP_GENERATION_COMPLETE, 'LP Generation is already complete');
         uint256 currentIAZOState = getIAZOState();
         // Check if IAZO SUCCESS or HARDCAP met
@@ -348,7 +369,8 @@ contract IAZO is Initializable, ReentrancyGuard {
         // If pair for this token has already been initialized, then this will fail the IAZO
         if (IAZO_LIQUIDITY_LOCKER.apePairIsInitialized(address(iazoToken), address(baseToken))) {
             STATUS.FORCE_FAILED = true;
-            return;
+            emit ForceFailed(address(0));
+            return false;
         }
 
         //calculate fees
@@ -415,7 +437,7 @@ contract IAZO is Initializable, ReentrancyGuard {
         }
         
         emit AddLiquidity(baseLiquidity, saleTokenLiquidity, remainingBaseBalance);
-
+        return true;
     }
 
     /// @notice A public function to sweep accidental ERC20 transfers to this contract. 

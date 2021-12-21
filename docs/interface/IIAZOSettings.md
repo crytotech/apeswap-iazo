@@ -5,7 +5,13 @@
 
 
 
-### `SETTINGS() → address ADMIN_ADDRESS, address FEE_ADDRESS, uint256 BASE_FEE, uint256 MAX_BASE_FEE, uint256 NATIVE_CREATION_FEE, uint256 MIN_IAZO_LENGTH, uint256 MAX_IAZO_LENGTH, uint256 MIN_LOCK_PERIOD` (external)
+### `SETTINGS() → address ADMIN_ADDRESS, address payable FEE_ADDRESS, address BURN_ADDRESS, uint256 BASE_FEE, uint256 MAX_BASE_FEE, uint256 IAZO_TOKEN_FEE, uint256 MAX_IAZO_TOKEN_FEE, uint256 NATIVE_CREATION_FEE, uint256 MIN_LIQUIDITY_PERCENT, uint256 MAX_LIQUIDITY_PERCENT` (external)
+
+
+
+
+
+### `DELAY_SETTINGS() → uint256 MIN_IAZO_LENGTH, uint256 MAX_IAZO_LENGTH, uint256 MIN_LOCK_PERIOD, uint256 START_DELAY, uint256 MAX_START_DELAY` (external)
 
 
 
@@ -24,6 +30,12 @@
 
 
 ### `isAdmin(address toCheck) → bool` (external)
+
+
+
+
+
+### `getMinStartTime() → uint256` (external)
 
 
 
@@ -83,6 +95,12 @@
 
 
 
+### `getMaxLiquidityPercent() → uint256` (external)
+
+
+
+
+
 ### `getFeeAddress() → address payable` (external)
 
 
@@ -113,6 +131,12 @@
 
 
 
+### `setStartDelay(uint256 _maxLength)` (external)
+
+
+
+
+
 ### `setMaxIAZOLength(uint256 _maxLength)` (external)
 
 
@@ -137,7 +161,15 @@
 
 
 
+### `setMaxLiquidityPercent(uint256 _maxLiquidityPercent)` (external)
+
+
+
+
+
 ### `setBurnAddress(address _burnAddress)` (external)
+
+
 
 
 
