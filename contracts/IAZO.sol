@@ -30,6 +30,7 @@ import "./interface/IIAZOLiquidityLocker.sol";
 /// @title IAZO
 /// @author ApeSwapFinance
 /// @notice IAZO contract where to buy the tokens from
+/// Version 2.0
 contract IAZO is Initializable, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
@@ -173,6 +174,12 @@ contract IAZO is Initializable, ReentrancyGuard {
     /// @notice Modifier: Only allow IAZO owner address to call certain functions
     modifier onlyIAZOFactory() {
         require(msg.sender == IAZO_FACTORY, "IAZO_FACTORY only");
+        _;
+    }
+
+    /// @notice Modifier: Only allow calls when iazo is in queued state
+    modifier onlyQueuedIAZO() {
+        require(getIAZOState() == 0, 'iazo must be in queued state');
         _;
     }
 
@@ -326,8 +333,7 @@ contract IAZO is Initializable, ReentrancyGuard {
     /// @notice Change start and end of IAZO
     /// @param _startTime New start time of IAZO
     /// @param _activeTime New active time of IAZO
-    function updateStart(uint256 _startTime, uint256 _activeTime) external onlyIAZOOwner {
-        require(IAZO_TIME_INFO.START_TIME > block.timestamp, "IAZO has already started");
+    function updateStart(uint256 _startTime, uint256 _activeTime) external onlyIAZOOwner onlyQueuedIAZO {
         require(_startTime >= IAZO_SETTINGS.getMinStartTime(), "Start time must be in future");
         require(_activeTime >= IAZO_SETTINGS.getMinIAZOLength(), "IAZO active time is too short");
         require(_activeTime <= IAZO_SETTINGS.getMaxIAZOLength(), "IAZO active time is too long");
@@ -341,7 +347,7 @@ contract IAZO is Initializable, ReentrancyGuard {
 
     /// @notice Change the max spend limit for a buyer
     /// @param _maxSpend New spend limit
-    function updateMaxSpendLimit(uint256 _maxSpend) external onlyIAZOOwner {
+    function updateMaxSpendLimit(uint256 _maxSpend) external onlyIAZOOwner onlyQueuedIAZO {
         uint256 previousMaxSpend = IAZO_INFO.MAX_SPEND_PER_BUYER;
         IAZO_INFO.MAX_SPEND_PER_BUYER = _maxSpend;
         emit UpdateMaxSpendLimit(previousMaxSpend, IAZO_INFO.MAX_SPEND_PER_BUYER);
